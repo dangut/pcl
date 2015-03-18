@@ -1,0 +1,26 @@
+Change with respect to original PCL is the inclusion of a modified version of large scale KinectFusion (in folder gpu/kinfuLS_rgb_depth), substituting the ICP camera tracking by the method presented in [1]. The rest of mapping and volume shifting functions and classes are kept unchanged.
+
+If you want to evaluate with the TUM RGB-D benchmarking datasets you need first to associate the depth and rgb images. Extract modified_TUM_assoc_script.zip in the dataset folder and run:
+./associate_new_files.py depth.txt rgb.txt --offset 0.02
+
+The offset parameter corrects the delay of the depth stream wrt. RGB stream reported by the authors of the dataset [2]. 
+
+Usage example:
+
+$ ./pcl_kinfuLS_rgb_depth -eval rgbd_dataset_freiburg1_desk/ -est Student -mm constVelocity --depth_error_type invDepth -set sigmaSamplingML
+
+
+For evaluation I used the evaluate_ate.py and evaluation_rpe.py scripts provided by authors of the TUM dataset. Usage example:
+
+In the dataset folder...
+
+$ evaluation_rpe.py --fixed_delta --offset -0.02 groundtruth.txt visodo_file_of_poses_generated.txt
+
+The offset parameter is again because of the depth stream delay wrt rgb (groundtruth is synchronized with rgb but poses in the generated file are stamped with the timestamp of the depth image)
+
+[1]D. Gutierrez-Gomez, W. Mayol-Cuevas, J.J. Guerrero. Inverse Depth for Accurate Photometric and Geometric Error Minimisation in RGB-D Dense Visual Odometry.  In ICRA, 2015.
+[2]J. Sturm, N. Engelhard, F. Endres, W. Burgard, and D. Cremers. A benchmark for the evaluation of rgb-d slam systems. In IROS, 2012.
+
+
+
+

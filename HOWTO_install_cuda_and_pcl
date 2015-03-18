@@ -1,0 +1,89 @@
+---------Cuda toolkit and nvidia drivers installation------------
+
+1) If using a laptop, install bumblebee  (http://www.themukt.com/2014/06/13/howto-install-nvidia-331-bumblebee-optimus-cards-ubuntu/)
+
+ 	a) First and foremost, install the kernel header file. This header file will be required to recompile dkms package for the new Nvidia driver.
+
+		$ sudo apt-get install linux-headers-generic
+
+	b) Install bumblebee if you haven’t done already
+
+		$ sudo add-apt-repository ppa:bumblebee/stable
+		Then
+			$ sudo apt-get update && sudo apt-get install bumblebee bumblebee-nvidia primus
+		or 
+			open synaptic PM, reload repos and install packages
+
+2) Install the last cuda toolkit (at the moment of writting this, cuda6.0) (http://docs.nvidia.com/cuda/cuda-getting-started-guide-for-linux/#axzz39Xa49azk)
+		$ sudo dpkg -i cuda-repo-<distro>_<version>_<architecture>.deb
+		Then
+			$ sudo apt-get update
+			$ sudo apt-get install cuda
+		or
+			open synaptic PM, reload repos and install packages
+
+	NOTE: when installing CUDA, PM will probably tell to remove nvidia-current and nvidia-some_number packages which were installed together with bumblebee package. It's OK removing them, cuda package includes appropiate drivers.
+
+3) Environment setup and isntall samples
+	$ export PATH=/usr/local/cuda-6.0/bin:$PATH
+	$ export LD_LIBRARY_PATH=/usr/local/cuda-6.0/lib:$LD_LIBRARY_PATH
+	$ cuda-install-samples-6.0.sh <dir>
+
+4) Once installation is done, edit the bumblebee.conf using your favourite text editor. Check which driver version (version_number) was installed with cuda toolkit (nvidia-331 for cuda 6.0). (http://www.themukt.com/2014/06/13/howto-install-nvidia-331-bumblebee-optimus-cards-ubuntu/)
+
+	Open bumblebee config file
+	  $ sudo vim /etc/bumblebee/bumblebee.conf
+
+	In line no 22, set the following:
+	  Driver=nvidia
+
+	You will also need to specify which nvidia driver to use in line no 55:
+	  KernelDriver=nvidia-version_number
+
+	Change the following in line no 58:
+	  LibraryPath=/usr/lib/nvidia-version_number:/usr/lib32/nvidia-version_number
+
+	And in line no 61 :
+	  XorgModulePath=/usr/lib/nvidia-version_number/xorg,/usr/lib/xorg/modules
+
+	Reinstall bbswitch-dkms
+	 $sudo apt-get install --reinstall bbswitch-dkms
+
+	Reboot
+
+
+-------PCL installation------------
+
+http://robotica.unileon.es/mediawiki/index.php/PCL/OpenNI_tutorial_1:_Installing_and_testing
+
+1) Install dpendencies
+	$ sudo add-apt-repository ppa:v-launchpad-jochen-sprickerhof-de/pcl
+	$ sudo apt-get update
+	$ sudo apt-get install build-essential cmake cmake-curses-gui libboost-all-dev libeigen3-dev libflann-dev libvtk5-dev libvtk5-qt4-dev libglew-dev libxmu-dev libsuitesparse-dev libqhull-dev libpcap-dev libxmu-dev libxi-dev -y
+
+2) Install libopenni-dev and libopenni-sensor-primesense-dev from synaptic
+
+3) Link above says sth about jdk, but I think i didnt need to install it for the moment
+
+4) If using ASUS Xtion Pro (http://robotica.unileon.es/mediawiki/index.php/PCL/OpenNI_troubleshooting#ASUS_Xtion_PRO)
+ sudo gedit /etc/openni/GlobalDefaults.ini
+ Find the line that says ";UsbInterface=2" and uncomment it 
+
+5) Now you can install the source
+	$ mkdir build
+	$ cd build
+	$ ccmake ../ -> select the modules you want to install. Note that some modules must be checked in advanced options. Note that BUILD_GPU and all kinfu versions are OFF by default
+	$ cmake ../ -> check if any module you want to install is disabled by missing packages
+	$ make
+	$ sudo make install
+
+
+-----Execution example------------
+
+./pcl_kinfuLS_rgb_depth -est Student -mm constVelocity
+
+
+
+
+
+
