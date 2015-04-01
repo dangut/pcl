@@ -44,7 +44,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
 
       ////////////////////////////////////////////////////////////////////////////////////////
@@ -77,7 +77,7 @@ namespace pcl
         mutable PtrSz<float> output_intensity;
 
         __device__ __forceinline__ float
-        fetch (pcl::gpu::kinfuLS::tsdf_buffer buffer, int x, int y, int z, int& weight) const
+        fetch (pcl::gpu::kinfuRGBD::tsdf_buffer buffer, int x, int y, int z, int& weight) const
         {
           float tsdf;
           const short2* tmp_pos = &(volume.ptr (buffer.voxels_size.y * z + y)[x]);
@@ -278,7 +278,7 @@ namespace pcl
         // The previous operator generates a regular point cloud in meters. 
         // This one generates a TSDF Point Cloud in grid indices.
         __device__ __forceinline__ void
-        operator () (pcl::gpu::kinfuLS::tsdf_buffer buffer, int3 minBounds, int3 maxBounds) const
+        operator () (pcl::gpu::kinfuRGBD::tsdf_buffer buffer, int3 minBounds, int3 maxBounds) const
         {
           int x = threadIdx.x + blockIdx.x * CTA_SIZE_X;
           int y = threadIdx.y + blockIdx.y * CTA_SIZE_Y;
@@ -286,7 +286,7 @@ namespace pcl
           int ftid = Block::flattenedThreadId ();
 
           int minimum_Z = 0;
-          int maximum_Z = VOLUME_Z - 1;
+          int maximum_Z = VOLUME_Z-1;
 
           for (int z = minimum_Z; z < maximum_Z; ++z)
           {
@@ -416,7 +416,7 @@ namespace pcl
       }
 
       __global__ void
-      extractSliceKernel (const FullScan6 fs, pcl::gpu::kinfuLS::tsdf_buffer buffer, int3 minBounds, int3 maxBounds) 
+      extractSliceKernel (const FullScan6 fs, pcl::gpu::kinfuRGBD::tsdf_buffer buffer, int3 minBounds, int3 maxBounds) 
       {
         fs (buffer, minBounds, maxBounds);
       }
@@ -449,7 +449,7 @@ namespace pcl
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
       size_t
-      extractSliceAsCloud (const PtrStep<short2>& volume, const float3& volume_size, const pcl::gpu::kinfuLS::tsdf_buffer* buffer, 
+      extractSliceAsCloud (const PtrStep<short2>& volume, const float3& volume_size, const pcl::gpu::kinfuRGBD::tsdf_buffer* buffer, 
                                         const int shiftX, const int shiftY, const int shiftZ, 
                                         PtrSz<PointType> output_xyz, PtrSz<float> output_intensities)
       {
@@ -562,7 +562,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       template<typename NormalType>
       struct ExtractNormals

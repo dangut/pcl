@@ -38,13 +38,13 @@
 
 
 
-#ifndef PCL_SCREENSHOT_MANAGER_CPP_
-#define PCL_SCREENSHOT_MANAGER_CPP_
-#include <pcl/gpu/kinfu_large_scale/screenshot_manager.h>
+#ifndef PCL_SCREENSHOT_MANAGER_CPP_RGBD_
+#define PCL_SCREENSHOT_MANAGER_CPP_RGBD_
+#include <pcl/gpu/kinfuLS_rgb_depth/screenshot_manager.h>
 
 namespace pcl
 {
-  namespace kinfuLS
+  namespace kinfuRGBD
   {
       ScreenshotManager::ScreenshotManager()
       {

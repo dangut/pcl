@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef PCL_GPU_KINFU_DEVICE_HPP_
-#define PCL_GPU_KINFU_DEVICE_HPP_
+#ifndef PCL_GPU_KINFU_DEVICE_HPP_RGBD_
+#define PCL_GPU_KINFU_DEVICE_HPP_RGBD_
 
 //#include <pcl/gpu/utils/device/limits.hpp>
 //#include <pcl/gpu/utils/device/vector_math.hpp>
@@ -50,7 +50,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {   
       #define INV_DIV 3.051850947599719e-5f
 

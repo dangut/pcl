@@ -43,10 +43,10 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       __global__ void
-      loadTsdfValueKernel (short2* first_point_pointer, float4 *data_ptr, int number_of_points, const int divisor, pcl::gpu::kinfuLS::tsdf_buffer buffer)
+      loadTsdfValueKernel (short2* first_point_pointer, float4 *data_ptr, int number_of_points, const int divisor, pcl::gpu::kinfuRGBD::tsdf_buffer buffer)
       {
         int i = blockDim.x * blockIdx.x  + threadIdx.x;
         if (i < number_of_points)
@@ -74,7 +74,7 @@ namespace pcl
       }
 
       void 
-      pushCloudAsSliceGPU (const PtrStep<short2>& volume, pcl::gpu::DeviceArray<PointType> cloud_gpu, const pcl::gpu::kinfuLS::tsdf_buffer* buffer) 
+      pushCloudAsSliceGPU (const PtrStep<short2>& volume, pcl::gpu::DeviceArray<PointType> cloud_gpu, const pcl::gpu::kinfuRGBD::tsdf_buffer* buffer) 
       {
         // Because every point is 8 floats.
         // X Y Z 0     
@@ -99,7 +99,7 @@ namespace pcl
         cudaSafeCall ( cudaGetLastError () );
         cudaSafeCall ( cudaDeviceSynchronize () );
       }
-    } /*namespace kinfuLS*/ 
+    } /*namespace kinfuRGBD*/ 
   } /*namespace device*/
 } /*namespace pcl*/
 

@@ -44,10 +44,12 @@
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/visualization/point_cloud_handlers.h>
 
-#include <pcl/gpu/kinfu_large_scale/kinfu.h>
+#include <pcl/gpu/kinfuLS_rgb_depth/kinfu.h>
 #include <pcl/gpu/containers/device_array.h>
 #include <pcl/gpu/containers/initialization.h>
 #include "openni_capture.h"
+
+#include "../src/internal.h"
 
 #include "tsdf_volume.h"
 #include "tsdf_volume.hpp"

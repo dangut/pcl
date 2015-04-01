@@ -36,18 +36,18 @@
  */
 
 
-#ifndef PCL_CYCLICAL_BUFFER_IMPL_H_
-#define PCL_CYCLICAL_BUFFER_IMPL_H_
+#ifndef PCL_CYCLICAL_BUFFER_IMPL_H_RGBD_
+#define PCL_CYCLICAL_BUFFER_IMPL_H_RGBD_
 
 #include <pcl/point_types.h>
-#include <pcl/gpu/kinfu_large_scale/tsdf_volume.h>
-#include <pcl/gpu/kinfu_large_scale/tsdf_buffer.h>
+#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_volume.h>
+#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_buffer.h>
 #include <Eigen/Core>
 //#include <boost/graph/buffer_concepts.hpp>
 #include <cuda_runtime.h>
-#include <pcl/gpu/kinfu_large_scale/point_intensity.h>
+#include <pcl/gpu/kinfuLS_rgb_depth/point_intensity.h>
 
-#include <pcl/gpu/kinfu_large_scale/world_model.h>
+#include <pcl/gpu/kinfuLS_rgb_depth/world_model.h>
 
 
 #include <pcl/io/pcd_io.h>
@@ -55,11 +55,11 @@ namespace pcl
 {
   namespace gpu
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     { 
         
       /** \brief CyclicalBuffer implements a cyclical TSDF buffer.
-        *  The class offers a simple interface, by handling shifts and maintaining the world autonomously.
+        * \The class offers a simple interface, by handling shifts and maintaining the world autonomously.
         * \author Raphael Favier, Francisco Heredia
         */
       class PCL_EXPORTS CyclicalBuffer
@@ -173,8 +173,8 @@ namespace pcl
           /** \brief Computes and set the origin of the new cube (relative to the world), centered around a the target point.
             * \param[in] target_point the target point around which the new cube will be centered.
             * \param[out] shiftX shift on X axis (in indices).
-            * \param[out] shiftY shift on Y axis (in indices).
-            * \param[out] shiftZ shift on Z axis (in indices).
+            * \param[out] shiftX shift on X axis (in indices).
+            * \param[out] shiftX shift on X axis (in indices).
             */ 
           void computeAndSetNewCubeMetricOrigin (const pcl::PointXYZ &target_point, int &shiftX, int &shiftY, int &shiftZ);
           
@@ -203,7 +203,7 @@ namespace pcl
           
           /** \brief Return a pointer to the world model
             */ 
-          pcl::kinfuLS::WorldModel<pcl::PointXYZI>*
+          pcl::kinfuRGBD::WorldModel<pcl::PointXYZI>*
           getWorldModel ()
           {
             return (&world_model_);
@@ -222,7 +222,7 @@ namespace pcl
           double distance_threshold_;
           
           /** \brief world model object that maintains the known world */
-          pcl::kinfuLS::WorldModel<pcl::PointXYZI> world_model_;
+          pcl::kinfuRGBD::WorldModel<pcl::PointXYZI> world_model_;
 
           /** \brief structure that contains all TSDF buffer's addresses */
           tsdf_buffer buffer_;

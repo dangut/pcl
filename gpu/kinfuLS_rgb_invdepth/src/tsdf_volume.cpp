@@ -35,7 +35,7 @@
  *
  */
 
-#include <pcl/gpu/kinfu_large_scale/tsdf_volume.h>
+#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_volume.h>
 #include "internal.h"
 #include <algorithm>
 #include <Eigen/Core>
@@ -45,11 +45,11 @@
 using namespace pcl;
 using namespace pcl::gpu;
 using namespace Eigen;
-using pcl::device::kinfuLS::device_cast;
+using pcl::device::kinfuRGBD::device_cast;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pcl::gpu::kinfuLS::TsdfVolume::TsdfVolume(const Vector3i& resolution) : resolution_(resolution), volume_host_ (new std::vector<float>), weights_host_ (new std::vector<short>)
+pcl::gpu::kinfuRGBD::TsdfVolume::TsdfVolume(const Vector3i& resolution) : resolution_(resolution), volume_host_ (new std::vector<float>), weights_host_ (new std::vector<short>)
 {
   int volume_x = resolution_(0);
   int volume_y = resolution_(1);
@@ -70,7 +70,7 @@ pcl::gpu::kinfuLS::TsdfVolume::TsdfVolume(const Vector3i& resolution) : resoluti
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void
-pcl::gpu::kinfuLS::TsdfVolume::setSize(const Vector3f& size)
+pcl::gpu::kinfuRGBD::TsdfVolume::setSize(const Vector3f& size)
 {  
   size_ = size;
   setTsdfTruncDist(tranc_dist_);
@@ -79,7 +79,7 @@ pcl::gpu::kinfuLS::TsdfVolume::setSize(const Vector3f& size)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void
-pcl::gpu::kinfuLS::TsdfVolume::setTsdfTruncDist (float distance)
+pcl::gpu::kinfuRGBD::TsdfVolume::setTsdfTruncDist (float distance)
 {
   float cx = size_(0) / resolution_(0);
   float cy = size_(1) / resolution_(1);
@@ -91,7 +91,7 @@ pcl::gpu::kinfuLS::TsdfVolume::setTsdfTruncDist (float distance)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pcl::gpu::DeviceArray2D<int> 
-pcl::gpu::kinfuLS::TsdfVolume::data() const
+pcl::gpu::kinfuRGBD::TsdfVolume::data() const
 {
   return volume_;
 }
@@ -99,7 +99,7 @@ pcl::gpu::kinfuLS::TsdfVolume::data() const
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const Eigen::Vector3f&
-pcl::gpu::kinfuLS::TsdfVolume::getSize() const
+pcl::gpu::kinfuRGBD::TsdfVolume::getSize() const
 {
     return size_;
 }
@@ -107,7 +107,7 @@ pcl::gpu::kinfuLS::TsdfVolume::getSize() const
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const Eigen::Vector3i&
-pcl::gpu::kinfuLS::TsdfVolume::getResolution() const
+pcl::gpu::kinfuRGBD::TsdfVolume::getResolution() const
 {
   return resolution_;
 }
@@ -115,7 +115,7 @@ pcl::gpu::kinfuLS::TsdfVolume::getResolution() const
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const Eigen::Vector3f
-pcl::gpu::kinfuLS::TsdfVolume::getVoxelSize() const
+pcl::gpu::kinfuRGBD::TsdfVolume::getVoxelSize() const
 {    
   return size_.array () / resolution_.array().cast<float>();
 }
@@ -123,7 +123,7 @@ pcl::gpu::kinfuLS::TsdfVolume::getVoxelSize() const
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 float
-pcl::gpu::kinfuLS::TsdfVolume::getTsdfTruncDist () const
+pcl::gpu::kinfuRGBD::TsdfVolume::getTsdfTruncDist () const
 {
   return tranc_dist_;
 }
@@ -131,15 +131,15 @@ pcl::gpu::kinfuLS::TsdfVolume::getTsdfTruncDist () const
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void 
-pcl::gpu::kinfuLS::TsdfVolume::reset()
+pcl::gpu::kinfuRGBD::TsdfVolume::reset()
 {
-  pcl::device::kinfuLS::initVolume(volume_);
+  pcl::device::kinfuRGBD::initVolume(volume_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void
-pcl::gpu::kinfuLS::TsdfVolume::fetchCloudHost (PointCloud<PointXYZI>& cloud, bool connected26) const
+pcl::gpu::kinfuRGBD::TsdfVolume::fetchCloudHost (PointCloud<PointXYZI>& cloud, bool connected26) const
 {
   PointCloud<PointXYZ>::Ptr cloud_ptr_ = PointCloud<PointXYZ>::Ptr (new PointCloud<PointXYZ>);
   PointCloud<PointIntensity>::Ptr cloud_i_ptr_ = PointCloud<PointIntensity>::Ptr (new PointCloud<PointIntensity>);
@@ -150,7 +150,7 @@ pcl::gpu::kinfuLS::TsdfVolume::fetchCloudHost (PointCloud<PointXYZI>& cloud, boo
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void
-pcl::gpu::kinfuLS::TsdfVolume::fetchCloudHost (PointCloud<PointType>& cloud, bool connected26) const
+pcl::gpu::kinfuRGBD::TsdfVolume::fetchCloudHost (PointCloud<PointType>& cloud, bool connected26) const
 {
   int volume_x = resolution_(0);
   int volume_y = resolution_(1);
@@ -163,7 +163,7 @@ pcl::gpu::kinfuLS::TsdfVolume::fetchCloudHost (PointCloud<PointType>& cloud, boo
   cloud.points.clear ();
   cloud.points.reserve (10000);
 
-  const int DIVISOR = pcl::device::kinfuLS::DIVISOR; // SHRT_MAX;
+  const int DIVISOR = pcl::device::kinfuRGBD::DIVISOR; // SHRT_MAX;
 
 #define FETCH(x, y, z) volume_host[(x) + (y) * volume_x + (z) * volume_y * volume_x]
 
@@ -276,31 +276,31 @@ pcl::gpu::kinfuLS::TsdfVolume::fetchCloudHost (PointCloud<PointType>& cloud, boo
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-pcl::gpu::DeviceArray<pcl::gpu::kinfuLS::TsdfVolume::PointType>
-pcl::gpu::kinfuLS::TsdfVolume::fetchCloud (DeviceArray<PointType>& cloud_buffer) const
+pcl::gpu::DeviceArray<pcl::gpu::kinfuRGBD::TsdfVolume::PointType>
+pcl::gpu::kinfuRGBD::TsdfVolume::fetchCloud (DeviceArray<PointType>& cloud_buffer) const
 {
   if (cloud_buffer.empty ())
     cloud_buffer.create (DEFAULT_CLOUD_BUFFER_SIZE);
 
   float3 device_volume_size = device_cast<const float3> (size_);
-  size_t size = pcl::device::kinfuLS::extractCloud (volume_, device_volume_size, cloud_buffer);
+  size_t size = pcl::device::kinfuRGBD::extractCloud (volume_, device_volume_size, cloud_buffer);
   return (DeviceArray<PointType> (cloud_buffer.ptr (), size));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void
-pcl::gpu::kinfuLS::TsdfVolume::fetchNormals (const DeviceArray<PointType>& cloud, DeviceArray<PointType>& normals) const
+pcl::gpu::kinfuRGBD::TsdfVolume::fetchNormals (const DeviceArray<PointType>& cloud, DeviceArray<PointType>& normals) const
 {
   normals.create (cloud.size ());
   const float3 device_volume_size = device_cast<const float3> (size_);
-  pcl::device::kinfuLS::extractNormals (volume_, device_volume_size, cloud, (pcl::device::kinfuLS::PointType*)normals.ptr ());
+  pcl::device::kinfuRGBD::extractNormals (volume_, device_volume_size, cloud, (pcl::device::kinfuRGBD::PointType*)normals.ptr ());
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void 
-pcl::gpu::kinfuLS::TsdfVolume::pushSlice (PointCloud<PointXYZI>::Ptr existing_data_cloud, const pcl::gpu::kinfuLS::tsdf_buffer* buffer) const
+pcl::gpu::kinfuRGBD::TsdfVolume::pushSlice (PointCloud<PointXYZI>::Ptr existing_data_cloud, const pcl::gpu::kinfuRGBD::tsdf_buffer* buffer) const
 {
   size_t gpu_array_size = existing_data_cloud->points.size ();
 
@@ -317,13 +317,13 @@ pcl::gpu::kinfuLS::TsdfVolume::pushSlice (PointCloud<PointXYZI>::Ptr existing_da
 
   DeviceArray<float4>& cloud_cast = (DeviceArray<float4>&) cloud_gpu;
   //volume().pushCloudAsSlice (cloud_cast, &buffer_);
-  pcl::device::kinfuLS::pushCloudAsSliceGPU (volume_, cloud_cast, buffer);
+  pcl::device::kinfuRGBD::pushCloudAsSliceGPU (volume_, cloud_cast, buffer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 size_t
-pcl::gpu::kinfuLS::TsdfVolume::fetchSliceAsCloud (DeviceArray<PointType>& cloud_buffer_xyz, DeviceArray<float>& cloud_buffer_intensity, const pcl::gpu::kinfuLS::tsdf_buffer* buffer, int shiftX, int shiftY, int shiftZ ) const
+pcl::gpu::kinfuRGBD::TsdfVolume::fetchSliceAsCloud (DeviceArray<PointType>& cloud_buffer_xyz, DeviceArray<float>& cloud_buffer_intensity, const pcl::gpu::kinfuRGBD::tsdf_buffer* buffer, int shiftX, int shiftY, int shiftZ ) const
 {
   if (cloud_buffer_xyz.empty ())
     cloud_buffer_xyz.create (DEFAULT_CLOUD_BUFFER_SIZE/2);
@@ -334,7 +334,7 @@ pcl::gpu::kinfuLS::TsdfVolume::fetchSliceAsCloud (DeviceArray<PointType>& cloud_
 
   float3 device_volume_size = device_cast<const float3> (size_);
   
-  size_t size = pcl::device::kinfuLS::extractSliceAsCloud (volume_, device_volume_size, buffer, shiftX, shiftY, shiftZ, cloud_buffer_xyz, cloud_buffer_intensity);
+  size_t size = pcl::device::kinfuRGBD::extractSliceAsCloud (volume_, device_volume_size, buffer, shiftX, shiftY, shiftZ, cloud_buffer_xyz, cloud_buffer_intensity);
   
   std::cout << " SIZE IS " << size << std::endl;
   
@@ -344,17 +344,17 @@ pcl::gpu::kinfuLS::TsdfVolume::fetchSliceAsCloud (DeviceArray<PointType>& cloud_
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void
-pcl::gpu::kinfuLS::TsdfVolume::fetchNormals (const DeviceArray<PointType>& cloud, DeviceArray<NormalType>& normals) const
+pcl::gpu::kinfuRGBD::TsdfVolume::fetchNormals (const DeviceArray<PointType>& cloud, DeviceArray<NormalType>& normals) const
 {
   normals.create (cloud.size ());
   const float3 device_volume_size = device_cast<const float3> (size_);
-  pcl::device::kinfuLS::extractNormals (volume_, device_volume_size, cloud, (pcl::device::kinfuLS::float8*)normals.ptr ());
+  pcl::device::kinfuRGBD::extractNormals (volume_, device_volume_size, cloud, (pcl::device::kinfuRGBD::float8*)normals.ptr ());
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void
-pcl::gpu::kinfuLS::TsdfVolume::convertToTsdfCloud (pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud) const
+pcl::gpu::kinfuRGBD::TsdfVolume::convertToTsdfCloud (pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud) const
 {
   int sx = header_.resolution(0);
   int sy = header_.resolution(1);
@@ -388,7 +388,7 @@ pcl::gpu::kinfuLS::TsdfVolume::convertToTsdfCloud (pcl::PointCloud<pcl::PointXYZ
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void
-pcl::gpu::kinfuLS::TsdfVolume::downloadTsdf (std::vector<float>& tsdf) const
+pcl::gpu::kinfuRGBD::TsdfVolume::downloadTsdf (std::vector<float>& tsdf) const
 {
   tsdf.resize (volume_.cols() * volume_.rows());
   volume_.download(&tsdf[0], volume_.cols() * sizeof(int));
@@ -397,21 +397,21 @@ pcl::gpu::kinfuLS::TsdfVolume::downloadTsdf (std::vector<float>& tsdf) const
   for(int i = 0; i < (int) tsdf.size(); ++i)
   {
     float tmp = reinterpret_cast<short2*>(&tsdf[i])->x;
-    tsdf[i] = tmp/pcl::device::kinfuLS::DIVISOR;
+    tsdf[i] = tmp/pcl::device::kinfuRGBD::DIVISOR;
   }
 }
 
 void
-pcl::gpu::kinfuLS::TsdfVolume::downloadTsdfLocal () const
+pcl::gpu::kinfuRGBD::TsdfVolume::downloadTsdfLocal () const
 {
-  pcl::gpu::kinfuLS::TsdfVolume::downloadTsdf (*volume_host_);
+  pcl::gpu::kinfuRGBD::TsdfVolume::downloadTsdf (*volume_host_);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void
-pcl::gpu::kinfuLS::TsdfVolume::downloadTsdfAndWeights (std::vector<float>& tsdf, std::vector<short>& weights) const
+pcl::gpu::kinfuRGBD::TsdfVolume::downloadTsdfAndWeights (std::vector<float>& tsdf, std::vector<short>& weights) const
 {
   int volumeSize = volume_.cols() * volume_.rows();
   tsdf.resize (volumeSize);
@@ -422,22 +422,22 @@ pcl::gpu::kinfuLS::TsdfVolume::downloadTsdfAndWeights (std::vector<float>& tsdf,
   for(int i = 0; i < (int) tsdf.size(); ++i)
   {
     short2 elem = *reinterpret_cast<short2*>(&tsdf[i]);
-    tsdf[i] = (float)(elem.x)/pcl::device::kinfuLS::DIVISOR;    
+    tsdf[i] = (float)(elem.x)/pcl::device::kinfuRGBD::DIVISOR;    
     weights[i] = (short)(elem.y);    
   }
 }
 
 
 void
-pcl::gpu::kinfuLS::TsdfVolume::downloadTsdfAndWeightsLocal () const
+pcl::gpu::kinfuRGBD::TsdfVolume::downloadTsdfAndWeightsLocal () const
 {
-  pcl::gpu::kinfuLS::TsdfVolume::downloadTsdfAndWeights (*volume_host_, *weights_host_);
+  pcl::gpu::kinfuRGBD::TsdfVolume::downloadTsdfAndWeights (*volume_host_, *weights_host_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool
-pcl::gpu::kinfuLS::TsdfVolume::save (const std::string &filename, bool binary) const
+pcl::gpu::kinfuRGBD::TsdfVolume::save (const std::string &filename, bool binary) const
 {
   pcl::console::print_info ("Saving TSDF volume to "); pcl::console::print_value ("%s ... ", filename.c_str());
   std::cout << std::flush;
@@ -491,7 +491,7 @@ pcl::gpu::kinfuLS::TsdfVolume::save (const std::string &filename, bool binary) c
 
 
 bool
-pcl::gpu::kinfuLS::TsdfVolume::load (const std::string &filename, bool binary)
+pcl::gpu::kinfuRGBD::TsdfVolume::load (const std::string &filename, bool binary)
 {
   pcl::console::print_info ("Loading TSDF volume from "); pcl::console::print_value ("%s ... ", filename.c_str());
   std::cout << std::flush;

@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef PCL_KINFU_TSDF_VOLUME_H_
-#define PCL_KINFU_TSDF_VOLUME_H_
+#ifndef PCL_KINFU_TSDF_VOLUME_H_RGBD_
+#define PCL_KINFU_TSDF_VOLUME_H_RGBD_
 
 #include <pcl/pcl_macros.h>
 #include <pcl/gpu/containers/device_array.h>
@@ -45,16 +45,16 @@
 #include <Eigen/Core>
 #include <vector>
 
-#include <pcl/gpu/kinfu_large_scale/tsdf_buffer.h>
+#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_buffer.h>
 
-#include <pcl/gpu/kinfu_large_scale/point_intensity.h>
+#include <pcl/gpu/kinfuLS_rgb_depth/point_intensity.h>
 
 
 namespace pcl
 {
   namespace gpu
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       /** \brief TsdfVolume class
         * \author Anatoly Baskeheev, Itseez Ltd, (myname.mysurname@mycompany.com)
@@ -105,7 +105,7 @@ EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         };        
         
         /** \brief Default buffer size for fetching cloud. It limits max number of points that can be extracted */
-        enum { DEFAULT_CLOUD_BUFFER_SIZE = 10 * 1000 * 1000 };
+        enum { DEFAULT_CLOUD_BUFFER_SIZE = 50 * 1000 * 1000 };
               
         /** \brief Constructor
           * \param[in] resolution volume resolution
@@ -170,15 +170,13 @@ EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         fetchCloud (DeviceArray<PointType>& cloud_buffer) const;
 
           /** \brief Push a point cloud of previously scanned tsdf slice to the TSDF volume
-            * \param[in] existing_data_cloud point cloud pointer to the existing data. This data will be pushed to the TSDf volume. The points with indices outside the range [0 ... VOLUME_X - 1][0 ... VOLUME_Y - 1][0 ... VOLUME_Z - 1] will not be added.
-            * \param buffer
+            * \param[in] existingCloud point cloud pointer to the existing data. This data will be pushed to the TSDf volume. The points with indices outside the range [0 ... VOLUME_X - 1][0 ... VOLUME_Y - 1][0 ... VOLUME_Z - 1] will not be added.
             */
         void 
         pushSlice (const PointCloud<PointXYZI>::Ptr existing_data_cloud, const tsdf_buffer* buffer) const;
 
         /** \brief Generates cloud using GPU in connected6 mode only
-          * \param[out] cloud_buffer_xyz buffer to store point cloud
-          * \param cloud_buffer_intensity
+          * \param[out] cloud_buffer buffer_xyz to store point cloud
           * \param[in] buffer Pointer to the buffer struct that contains information about memory addresses of the tsdf volume memory block, which are used for the cyclic buffer.
           * \param[in] shiftX Offset in indices.
           * \param[in] shiftY Offset in indices.

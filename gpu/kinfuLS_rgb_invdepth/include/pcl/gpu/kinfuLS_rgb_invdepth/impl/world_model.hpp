@@ -36,14 +36,15 @@
  *  Author: Raphael Favier, Technical University Eindhoven, (r.mysurname <aT> tue.nl)
  */
 
-#ifndef PCL_WORLD_MODEL_IMPL_HPP_
-#define PCL_WORLD_MODEL_IMPL_HPP_
+#ifndef PCL_WORLD_MODEL_IMPL_HPP_RGBD_
+#define PCL_WORLD_MODEL_IMPL_HPP_RGBD_
 
-#include <pcl/gpu/kinfu_large_scale/world_model.h>
+#include <pcl/gpu/kinfuLS_rgb_depth/world_model.h>
+#include <pcl/gpu/kinfuLS_rgb_depth/impl/standalone_marching_cubes.hpp>
 
 template <typename PointT>
 void 
-pcl::kinfuLS::WorldModel<PointT>::addSlice ( PointCloudPtr new_cloud)
+pcl::kinfuRGBD::WorldModel<PointT>::addSlice ( PointCloudPtr new_cloud)
 {
   PCL_DEBUG ("Adding new cloud. Current world contains %d points.\n", world_->points.size ());
 
@@ -57,7 +58,7 @@ pcl::kinfuLS::WorldModel<PointT>::addSlice ( PointCloudPtr new_cloud)
 
 template <typename PointT>
 void 
-pcl::kinfuLS::WorldModel<PointT>::getExistingData(const double previous_origin_x, const double previous_origin_y, const double previous_origin_z, const double offset_x, const double offset_y, const double offset_z, const double volume_x, const double volume_y, const double volume_z, pcl::PointCloud<PointT> &existing_slice)
+pcl::kinfuRGBD::WorldModel<PointT>::getExistingData(const double previous_origin_x, const double previous_origin_y, const double previous_origin_z, const double offset_x, const double offset_y, const double offset_z, const double volume_x, const double volume_y, const double volume_z, pcl::PointCloud<PointT> &existing_slice)
 {
   double newOriginX = previous_origin_x + offset_x; 
   double newOriginY = previous_origin_y + offset_y; 
@@ -78,8 +79,7 @@ pcl::kinfuLS::WorldModel<PointT>::getExistingData(const double previous_origin_x
   range_condAND->addComparison (FieldComparisonConstPtr (new pcl::FieldComparison<PointT> ("z", pcl::ComparisonOps::LT, newLimitZ))); 
   
   // build the filter
-  pcl::ConditionalRemoval<PointT> condremAND (true);
-  condremAND.setCondition (range_condAND);
+  pcl::ConditionalRemoval<PointT> condremAND (range_condAND, true);
   condremAND.setInputCloud (world_);
   condremAND.setKeepOrganized (false);
   
@@ -105,8 +105,7 @@ pcl::kinfuLS::WorldModel<PointT>::getExistingData(const double previous_origin_x
 	range_condOR->addComparison (FieldComparisonConstPtr (new pcl::FieldComparison<PointT> ("z", pcl::ComparisonOps::LT,  previous_origin_z )));
   
   // build the filter
-  pcl::ConditionalRemoval<PointT> condrem (true);
-  condrem.setCondition (range_condOR);
+  pcl::ConditionalRemoval<PointT> condrem (range_condOR, true);
   condrem.setInputCloud (newCube);
   condrem.setKeepOrganized (false);
   // apply filter
@@ -130,7 +129,7 @@ pcl::kinfuLS::WorldModel<PointT>::getExistingData(const double previous_origin_x
 
 template <typename PointT>
 void
-pcl::kinfuLS::WorldModel<PointT>::getWorldAsCubes (const double size, std::vector<typename WorldModel<PointT>::PointCloudPtr> &cubes, std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > &transforms, double overlap)
+pcl::kinfuRGBD::WorldModel<PointT>::getWorldAsCubes (const double size, std::vector<typename WorldModel<PointT>::PointCloudPtr> &cubes, std::vector<Eigen::Vector3f> &transforms, double overlap)
 {
   
   if(world_->points.size () == 0)
@@ -211,8 +210,7 @@ pcl::kinfuLS::WorldModel<PointT>::getWorldAsCubes (const double size, std::vecto
 		range_cond->addComparison (FieldComparisonConstPtr (new pcl::FieldComparison<PointT> ("z", pcl::ComparisonOps::LT, origin.z + cubeSide)));
 
 		// build the filter
-		pcl::ConditionalRemoval<PointT> condrem;
-		condrem.setCondition (range_cond);
+		pcl::ConditionalRemoval<PointT> condrem (range_cond);
 		condrem.setInputCloud (world_);
 		condrem.setKeepOrganized(false);
 		// apply filter
@@ -250,9 +248,131 @@ pcl::kinfuLS::WorldModel<PointT>::getWorldAsCubes (const double size, std::vecto
 
 }
 
+
+
+template <typename PointT>
+void
+pcl::kinfuRGBD::WorldModel<PointT>::getWorldAsMeshes (const double size,  pcl::gpu::kinfuRGBD::StandaloneMarchingCubes<PointT>& m_cubes, double overlap, std::string world_id)
+{
+  
+  if(world_->points.size () == 0)
+  {
+	PCL_INFO("The world is empty, returning nothing\n");
+	return;
+  }
+
+  PCL_INFO ("Getting world as cubes. World contains %d points.\n", world_->points.size ());
+
+  // remove nans from world cloud
+  world_->is_dense = false;
+  std::vector<int> indices;
+  pcl::removeNaNFromPointCloud ( *world_, *world_, indices);
+	
+  PCL_INFO ("World contains %d points after nan removal.\n", world_->points.size ());
+  
+
+  // check cube size value
+  double cubeSide = size;
+  if (cubeSide <= 0.0f)
+  {
+	PCL_ERROR ("Size of the cube must be positive and non null (%f given). Setting it to 3.0 meters.\n", cubeSide);
+	cubeSide = 512.0f;
+  }
+
+  std::cout << "cube size is set to " << cubeSide << std::endl;
+
+  // check overlap value
+  double step_increment = 1.0f - overlap;
+  if (overlap < 0.0)
+  {
+	PCL_ERROR ("Overlap ratio must be positive or null (%f given). Setting it to 0.0 procent.\n", overlap);
+	step_increment = 1.0f;
+  }
+  if (overlap > 1.0)
+  {
+	PCL_ERROR ("Overlap ratio must be less or equal to 1.0 (%f given). Setting it to 10 procent.\n", overlap);
+	step_increment = 0.1f;
+  }
+
+  
+  // get world's bounding values on XYZ
+  PointT min, max;
+  pcl::getMinMax3D(*world_, min, max);
+
+  PCL_INFO ("Bounding box for the world: \n\t [%f - %f] \n\t [%f - %f] \n\t [%f - %f] \n", min.x, max.x, min.y, max.y, min.z, max.z);
+
+  PointT origin = min;
+  
+  int mesh_num = 0;
+
+  // iterate with box filter
+  while (origin.x < max.x)
+  {
+	origin.y = min.y;
+	while (origin.y < max.y)
+	{
+	  origin.z = min.z;
+	  while (origin.z < max.z)
+	  {
+		// extract cube here
+		PCL_INFO ("Extracting cube at: [%f, %f, %f].\n",  origin.x,  origin.y,  origin.z);
+
+		// pointcloud for current cube.
+		PointCloudPtr box (new pcl::PointCloud<PointT>);
+
+
+		// set conditional filter
+		ConditionAndPtr range_cond (new pcl::ConditionAnd<PointT> ());
+		range_cond->addComparison (FieldComparisonConstPtr (new pcl::FieldComparison<PointT> ("x", pcl::ComparisonOps::GE, origin.x)));
+		range_cond->addComparison (FieldComparisonConstPtr (new pcl::FieldComparison<PointT> ("x", pcl::ComparisonOps::LT, origin.x + cubeSide)));
+		range_cond->addComparison (FieldComparisonConstPtr (new pcl::FieldComparison<PointT> ("y", pcl::ComparisonOps::GE, origin.y)));
+		range_cond->addComparison (FieldComparisonConstPtr (new pcl::FieldComparison<PointT> ("y", pcl::ComparisonOps::LT, origin.y + cubeSide)));
+		range_cond->addComparison (FieldComparisonConstPtr (new pcl::FieldComparison<PointT> ("z", pcl::ComparisonOps::GE, origin.z)));
+		range_cond->addComparison (FieldComparisonConstPtr (new pcl::FieldComparison<PointT> ("z", pcl::ComparisonOps::LT, origin.z + cubeSide)));
+
+		// build the filter
+		pcl::ConditionalRemoval<PointT> condrem (range_cond);
+		condrem.setInputCloud (world_);
+		condrem.setKeepOrganized(false);
+		// apply filter
+		condrem.filter (*box);
+
+		// also push transform along with points.
+		if(box->points.size() > 0)
+		{
+		  mesh_num++;
+		  Eigen::Vector3f transform;
+		  transform[0] = origin.x, transform[1] = origin.y, transform[2] = origin.z;
+		  m_cubes.getTrafoMeshFromTSDFCloud (box, transform, mesh_num, world_id);       
+		}
+		else
+		{
+		  PCL_INFO ("Extracted cube was empty, skiping this one.\n");
+		}
+		origin.z += cubeSide * step_increment;
+		
+	  }
+	  origin.y += cubeSide * step_increment;
+	}
+	origin.x += cubeSide * step_increment;
+  }
+
+
+ /* for(int c = 0 ; c < cubes.size() ; ++c)
+  {
+	std::stringstream name;
+	name << "cloud" << c+1 << ".pcd";
+	pcl::io::savePCDFileASCII(name.str(), *(cubes[c]));
+	
+  }*/
+
+  
+
+}
+
 template <typename PointT>
 inline void 
-pcl::kinfuLS::WorldModel<PointT>::setIndicesAsNans (PointCloudPtr cloud, IndicesConstPtr indices)
+pcl::kinfuRGBD::WorldModel<PointT>::setIndicesAsNans (PointCloudPtr cloud, IndicesConstPtr indices)
 {
   std::vector<pcl::PCLPointField> fields;
   pcl::for_each_type<FieldList> (pcl::detail::FieldAdder<PointT> (fields));
@@ -269,7 +389,7 @@ pcl::kinfuLS::WorldModel<PointT>::setIndicesAsNans (PointCloudPtr cloud, Indices
 
 template <typename PointT>
 void 
-pcl::kinfuLS::WorldModel<PointT>::setSliceAsNans (const double origin_x, const double origin_y, const double origin_z, const double offset_x, const double offset_y, const double offset_z, const int size_x, const int size_y, const int size_z)
+pcl::kinfuRGBD::WorldModel<PointT>::setSliceAsNans (const double origin_x, const double origin_y, const double origin_z, const double offset_x, const double offset_y, const double offset_z, const int size_x, const int size_y, const int size_z)
 { 
   // PCL_DEBUG ("IN SETSLICE AS NANS\n");
   
@@ -316,8 +436,7 @@ pcl::kinfuLS::WorldModel<PointT>::setSliceAsNans (const double origin_x, const d
   range_cond_OR_x->addComparison (FieldComparisonConstPtr (new pcl::FieldComparison<PointT> ("z", pcl::ComparisonOps::GE,  previous_limit_z)));
   range_cond_OR_x->addComparison (FieldComparisonConstPtr (new pcl::FieldComparison<PointT> ("z", pcl::ComparisonOps::LT,  previous_origin_z )));
 
-  pcl::ConditionalRemoval<PointT> condrem_x (true);
-  condrem_x.setCondition (range_cond_OR_x);
+  pcl::ConditionalRemoval<PointT> condrem_x (range_cond_OR_x, true);
   condrem_x.setInputCloud (world_);
   condrem_x.setKeepOrganized (false);
   // apply filter
@@ -354,8 +473,7 @@ pcl::kinfuLS::WorldModel<PointT>::setSliceAsNans (const double origin_x, const d
   range_cond_OR_y->addComparison (FieldComparisonConstPtr (new pcl::FieldComparison<PointT> ("z", pcl::ComparisonOps::GE,  previous_limit_z)));
   range_cond_OR_y->addComparison (FieldComparisonConstPtr (new pcl::FieldComparison<PointT> ("z", pcl::ComparisonOps::LT,  previous_origin_z )));
 
-  pcl::ConditionalRemoval<PointT> condrem_y (true);
-  condrem_y.setCondition (range_cond_OR_y);
+  pcl::ConditionalRemoval<PointT> condrem_y (range_cond_OR_y, true);
   condrem_y.setInputCloud (world_);
   condrem_y.setKeepOrganized (false);
   // apply filter
@@ -391,8 +509,7 @@ pcl::kinfuLS::WorldModel<PointT>::setSliceAsNans (const double origin_x, const d
   range_cond_OR_z->addComparison (FieldComparisonConstPtr (new pcl::FieldComparison<PointT> ("z", pcl::ComparisonOps::GE,  upper_limit_z))); // filtered dimension
   range_cond_OR_z->addComparison (FieldComparisonConstPtr (new pcl::FieldComparison<PointT> ("z", pcl::ComparisonOps::LT,  lower_limit_z ))); // filtered dimension
 
-  pcl::ConditionalRemoval<PointT> condrem_z (true);
-  condrem_z.setCondition (range_cond_OR_z);
+  pcl::ConditionalRemoval<PointT> condrem_z (range_cond_OR_z, true);
   condrem_z.setInputCloud (world_);
   condrem_z.setKeepOrganized (false);
   // apply filter
@@ -406,6 +523,6 @@ pcl::kinfuLS::WorldModel<PointT>::setSliceAsNans (const double origin_x, const d
   
 }
 
-#define PCL_INSTANTIATE_WorldModel(T) template class PCL_EXPORTS pcl::kinfuLS::WorldModel<T>;
+#define PCL_INSTANTIATE_WorldModel(T) template class PCL_EXPORTS pcl::kinfuRGBD::WorldModel<T>;
 
 #endif // PCL_WORLD_MODEL_IMPL_HPP_

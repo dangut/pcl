@@ -42,7 +42,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       __device__ __forceinline__ float
       getMinTime (const float3& volume_max, const float3& origin, const float3& dir)
@@ -101,7 +101,7 @@ namespace pcl
         }
 
         __device__ __forceinline__ float
-        readTsdf (int x, int y, int z, pcl::gpu::kinfuLS::tsdf_buffer buffer) const
+        readTsdf (int x, int y, int z, pcl::gpu::kinfuRGBD::tsdf_buffer buffer) const
         {
           const short2* tmp_pos = &(volume.ptr (buffer.voxels_size.y * z + y)[x]);
           short2* pos = const_cast<short2*> (tmp_pos);
@@ -120,13 +120,13 @@ namespace pcl
         }
 
         __device__ __forceinline__ float
-        interpolateTrilineary (const float3& origin, const float3& dir, float time, pcl::gpu::kinfuLS::tsdf_buffer buffer) const
+        interpolateTrilineary (const float3& origin, const float3& dir, float time, pcl::gpu::kinfuRGBD::tsdf_buffer buffer) const
         {
           return interpolateTrilineary (origin + dir * time, buffer);
         }
 
         __device__ __forceinline__ float
-        interpolateTrilineary (const float3& point, pcl::gpu::kinfuLS::tsdf_buffer buffer) const
+        interpolateTrilineary (const float3& point, pcl::gpu::kinfuRGBD::tsdf_buffer buffer) const
         {
           int3 g = getVoxel (point);
 
@@ -192,7 +192,7 @@ namespace pcl
 
 
         __device__ __forceinline__ void
-        operator () (pcl::gpu::kinfuLS::tsdf_buffer buffer) const
+        operator () (pcl::gpu::kinfuRGBD::tsdf_buffer buffer) const
         {
           int x = threadIdx.x + blockIdx.x * CTA_SIZE_X;
           int y = threadIdx.y + blockIdx.y * CTA_SIZE_Y;
@@ -214,12 +214,12 @@ namespace pcl
           ray_dir.z = (ray_dir.z == 0.f) ? 1e-15 : ray_dir.z;
 
           // computer time when entry and exit volume
-          float time_start_volume = getMinTime (volume_size, ray_start, ray_dir);
-          float time_exit_volume = getMaxTime (volume_size, ray_start, ray_dir);
+          float time_start_volume = getMinTime (volume_size, ray_start, ray_dir); //if in volume <= 0, if out of volume >= 0		
+          float time_exit_volume = getMaxTime (volume_size, ray_start, ray_dir); //if in volume >= 0, if out of volume <= 0
 
           const float min_dist = 0.f;         //in meters
-          time_start_volume = fmax (time_start_volume, min_dist);
-          if (time_start_volume >= time_exit_volume)
+          time_start_volume = fmax (time_start_volume, min_dist); //always == 0
+          if (time_start_volume >= time_exit_volume) //true if out of volume
             return;
 
           float time_curr = time_start_volume;
@@ -315,7 +315,7 @@ namespace pcl
       };
 
       __global__ void
-      rayCastKernel (const RayCaster rc, pcl::gpu::kinfuLS::tsdf_buffer buffer) {
+      rayCastKernel (const RayCaster rc, pcl::gpu::kinfuRGBD::tsdf_buffer buffer) {
         rc (buffer);
       }
 
@@ -323,8 +323,10 @@ namespace pcl
       void
       raycast (const Intr& intr, const Mat33& Rcurr, const float3& tcurr, 
                             float tranc_dist, const float3& volume_size,
-                            const PtrStep<short2>& volume, const pcl::gpu::kinfuLS::tsdf_buffer* buffer, MapArr& vmap, MapArr& nmap)
+                            const PtrStep<short2>& volume, const pcl::gpu::kinfuRGBD::tsdf_buffer* buffer, MapArr& vmap, MapArr& nmap)
       {
+cudaEvent_t start, stop;
+  float elapsedTime;
         RayCaster rc;
 
         rc.Rcurr = Rcurr;
@@ -349,10 +351,17 @@ namespace pcl
 
         dim3 block (RayCaster::CTA_SIZE_X, RayCaster::CTA_SIZE_Y);
         dim3 grid (divUp (rc.cols, block.x), divUp (rc.rows, block.y));
-
+cudaEventCreate(&start);
+  cudaEventRecord(start,0);
         rayCastKernel<<<grid, block>>>(rc, *buffer);
         cudaSafeCall (cudaGetLastError ());
-        cudaSafeCall(cudaDeviceSynchronize());
+cudaEventCreate(&stop);
+ cudaEventRecord(stop,0);
+ cudaEventSynchronize(stop);
+
+ cudaEventElapsedTime(&elapsedTime, start,stop);
+ //printf("raycast : %f ms\n" ,elapsedTime);
+        //cudaSafeCall(cudaDeviceSynchronize());
       }
     }
   }

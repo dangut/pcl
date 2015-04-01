@@ -44,7 +44,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       __global__ void
       initColorVolumeKernel (PtrStep<uchar4> volume)
@@ -85,7 +85,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       struct ColorVolumeImpl
       {
@@ -248,7 +248,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       __global__ void
       extractColorsKernel (const float3 cell_size, const PtrStep<uchar4> color_volume, const PtrSz<PointType> points, uchar4 *colors)

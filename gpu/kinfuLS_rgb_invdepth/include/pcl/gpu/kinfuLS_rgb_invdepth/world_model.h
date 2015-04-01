@@ -36,8 +36,8 @@
  *  Author: Raphael Favier, Technical University Eindhoven, (r.mysurname <aT> tue.nl)
  */
 
-#ifndef PCL_WORLD_MODEL_H_
-#define PCL_WORLD_MODEL_H_
+#ifndef PCL_WORLD_MODEL_H_RGBD_
+#define PCL_WORLD_MODEL_H_RGBD_
 
 #include <pcl/common/impl/common.hpp>
 #include <pcl/octree/octree.h>
@@ -48,18 +48,20 @@
 #include <pcl/filters/conditional_removal.h>
 #include <pcl/point_types.h>
 #include <pcl/io/pcd_io.h>
-//#include <pcl/gpu/kinfu_large_scale/tsdf_buffer.h>
+//Marching cubes includes
+#include <pcl/gpu/kinfuLS_rgb_depth/standalone_marching_cubes.h>
+//#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_buffer.h>
 //#include <boost/graph/buffer_concepts.hpp>
 
 
 namespace pcl
 {
-  namespace kinfuLS
+  namespace kinfuRGBD
   {
-    /** \brief WorldModel maintains a 3D point cloud that can be queried and updated via helper functions.\n
-      * The world is represented as a point cloud.\n
-      * When new points are added to the world, we replace old ones by the newest ones.
-      * This is acheived by setting old points to nan (for speed)
+    /** \brief WorldModel maintains a 3D point cloud that can be queried and updated via helper functions.
+      * \The world is represented as a point cloud.
+      * \When new points are added to the world, we replace old ones by the newest ones.
+      * \This is acheived by setting old points to nan (for speed)
       * \author Raphael Favier
       */
     template <typename PointT>
@@ -128,9 +130,9 @@ namespace pcl
           * \param[in] offset_x shift on X, in indices
           * \param[in] offset_y shift on Y, in indices
           * \param[in] offset_z shift on Z, in indices
-          * \param[in] size_x size of the cube, X axis, in indices
-          * \param[in] size_y size of the cube, Y axis, in indices
-          * \param[in] size_z size of the cube, Z axis, in indices
+          * \param[in] volume_x size of the cube, X axis, in indices
+          * \param[in] volume_y size of the cube, Y axis, in indices
+          * \param[in] volume_z size of the cube, Z axis, in indices
           */                    
         void setSliceAsNans (const double origin_x, const double origin_y, const double origin_z,
                             const double offset_x, const double offset_y, const double offset_z,
@@ -165,7 +167,9 @@ namespace pcl
           * \param[out] transforms a vector containing the xyz position of each cube in world coordinates.
           * \param[in] overlap optional overlap (in percent) between each cube (usefull to create overlapped meshes).
           */
-        void getWorldAsCubes (double size, std::vector<PointCloudPtr> &cubes, std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > &transforms, double overlap = 0.0);
+        void getWorldAsCubes (double size, std::vector<PointCloudPtr> &cubes, std::vector<Eigen::Vector3f> &transforms, double overlap = 0.0);
+        
+        void getWorldAsMeshes (double size, pcl::gpu::kinfuRGBD::StandaloneMarchingCubes<PointT>& m_cubes, double overlap = 0.0,std::string world_id="");
         
         
       private:

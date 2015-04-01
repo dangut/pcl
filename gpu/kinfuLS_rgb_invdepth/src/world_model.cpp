@@ -36,8 +36,9 @@
  *  Author: Raphael Favier, Technical University Eindhoven, (r.mysurname <aT> tue.nl)
  */
 
- #include <pcl/gpu/kinfu_large_scale/world_model.h>
- #include <pcl/gpu/kinfu_large_scale/impl/world_model.hpp>
+//#include <pcl/gpu/kinfuLS_rgb_depth/impl/standalone_marching_cubes.hpp>
+ #include <pcl/gpu/kinfuLS_rgb_depth/world_model.h>
+ #include <pcl/gpu/kinfuLS_rgb_depth/impl/world_model.hpp>
 
 
 

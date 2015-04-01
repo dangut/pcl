@@ -39,7 +39,7 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 #include <pcl/gpu/containers/kernel_containers.h>
-#include <pcl/gpu/kinfu_large_scale/kinfu.h>
+#include <pcl/gpu/kinfuLS_rgb_depth/kinfu.h>
 
 
 /** \brief  class for  RGB-D SLAM Dataset and Benchmark
@@ -49,36 +49,34 @@ class Evaluation
 {
 public:
   typedef boost::shared_ptr<Evaluation> Ptr; 
-  typedef /*pcl::gpu::KinfuTracker::PixelRGB*/ pcl::gpu::kinfuLS::PixelRGB RGB;
+  typedef /*pcl::gpu::KinfuTracker::PixelRGB*/ pcl::gpu::kinfuRGBD::PixelRGB RGB;
 
   Evaluation(const std::string& folder);
 
   /** \brief Sets file with matches between depth and rgb */
   void setMatchFile(const std::string& file);
 
+  void associate_depth_rgb(const std::string& file_depth, const std::string& file_rgb);
+
   /** \brief Reads rgb frame from the folder   
     * \param stamp index of frame to read (stamps are not implemented)
-    * \param rgb24
     */
   bool grab (double stamp, pcl::gpu::PtrStepSz<const RGB>& rgb24);
 
   /** \brief Reads depth frame from the folder
     * \param stamp index of frame to read (stamps are not implemented)
-    * \param depth
     */
   bool grab (double stamp, pcl::gpu::PtrStepSz<const unsigned short>& depth);
 
   /** \brief Reads depth & rgb frame from the folder. Before calling this folder please call 'setMatchFile', or an error will be returned otherwise.
     * \param stamp index of accociated frame pair (stamps are not implemented)
-    * \param depth
-    * \param rgb24
     */
   bool grab (double stamp, pcl::gpu::PtrStepSz<const unsigned short>& depth, pcl::gpu::PtrStepSz<const RGB>& rgb24);
 
   const static float fx, fy, cx, cy;
 
 
-  void saveAllPoses(const pcl::gpu::kinfuLS::KinfuTracker& kinfu, int frame_number = -1, const std::string& logfile = "kinfu_poses.txt") const;
+  void saveAllPoses(const pcl::gpu::kinfuRGBD::KinfuTracker& kinfu, int frame_number = -1, const std::string& poses_logfile = "kinfu_poses.txt", const std::string& misc_logfile = "kinfu_misc.txt") const;
 
 private:
   std::string folder_;

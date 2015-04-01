@@ -36,6 +36,9 @@
  *  Author: Raphael Favier, Technical University Eindhoven, (r.mysurname <aT> tue.nl)
  * 
  */
+ 
+#ifndef PCL_KINFU_FLOAT3_OPERATIONS_H_RGBD_
+#define PCL_KINFU_FLOAT3_OPERATIONS_H_RGBD_
 
 #include <iostream>
 
@@ -43,7 +46,7 @@ namespace pcl
 {
   namespace gpu
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       inline float
       dot(const float3& v1, const float3& v2)
@@ -138,3 +141,4 @@ namespace pcl
     }
   }
 }
+#endif

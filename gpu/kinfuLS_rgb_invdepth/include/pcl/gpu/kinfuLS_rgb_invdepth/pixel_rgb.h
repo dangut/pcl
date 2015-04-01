@@ -35,15 +35,15 @@
  *
  */
 
-#ifndef PCL_KINFU_PIXEL_RGB_HPP_
-#define PCL_KINFU_PIXEL_RGB_HPP_
+#ifndef PCL_KINFU_PIXEL_RGB_HPP_RGBD_
+#define PCL_KINFU_PIXEL_RGB_HPP_RGBD_
 //#include <boost/graph/buffer_concepts.hpp>
 
 namespace pcl
 {
   namespace gpu
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       /** \brief Input/output pixel format for KinfuTracker */
         

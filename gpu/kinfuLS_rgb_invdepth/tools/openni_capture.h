@@ -42,18 +42,18 @@
 #include <boost/shared_ptr.hpp>
 #include <string>
 
-#include <pcl/gpu/kinfu_large_scale/kinfu.h>
+#include <pcl/gpu/kinfuLS_rgb_depth/kinfu.h>
 
 namespace pcl
 {
   namespace gpu
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       class CaptureOpenNI
       {
   public:
-      typedef pcl::gpu::kinfuLS::PixelRGB RGB;
+      typedef pcl::gpu::kinfuRGBD::PixelRGB RGB;
 
       enum { PROP_OPENNI_REGISTRATION_ON  = 104 };
 

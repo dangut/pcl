@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef PCL_KINFU_TSDF_MARCHING_CUBES_H_
-#define PCL_KINFU_TSDF_MARCHING_CUBES_H_
+#ifndef PCL_KINFU_TSDF_MARCHING_CUBES_H_RGBD_
+#define PCL_KINFU_TSDF_MARCHING_CUBES_H_RGBD_
 
 #include <pcl/pcl_macros.h>
 #include <pcl/gpu/containers/device_array.h>
@@ -48,7 +48,7 @@ namespace pcl
 {
   namespace gpu
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       class TsdfVolume;
         
@@ -79,7 +79,7 @@ namespace pcl
         ~MarchingCubes();
         
         /** \brief Runs marching cubes triangulation.
-            * \param[in] tsdf
+            * \param[in] kinfu KinFu tracker class to take tsdf volume from
             * \param[in] triangles_buffer Buffer for triangles. Its size determines max extracted triangles. If empty, it will be allocated with default size will be used.          
             * \return Array with triangles. Each 3 consequent poits belond to a single triangle. The returned array points to 'triangles_buffer' data.
             */

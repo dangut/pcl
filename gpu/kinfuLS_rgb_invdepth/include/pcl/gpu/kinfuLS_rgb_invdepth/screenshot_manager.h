@@ -36,8 +36,8 @@
  *  Author: Francisco, Technical University Eindhoven, (f.j.mysurname.soriano <At > tue.nl)
  */
 
-#ifndef PCL_SCREENSHOT_MANAGER_H_
-#define PCL_SCREENSHOT_MANAGER_H_
+#ifndef PCL_SCREENSHOT_MANAGER_H_RGBD_
+#define PCL_SCREENSHOT_MANAGER_H_RGBD_
 
 #include <iostream>
 #include <fstream>
@@ -48,7 +48,7 @@
 #include <pcl/pcl_exports.h>
 #include <pcl/gpu/containers/device_array.h>
 #include <pcl/gpu/containers/kernel_containers.h>
-#include <pcl/gpu/kinfu_large_scale/pixel_rgb.h> 
+#include <pcl/gpu/kinfuLS_rgb_depth/pixel_rgb.h> 
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp> 
 //#include <boost/graph/buffer_concepts.hpp>
@@ -60,7 +60,7 @@
 
 namespace pcl
 {
-  namespace kinfuLS
+  namespace kinfuRGBD
   {
       /** \brief Screenshot Manager saves a screenshot with the corresponding camera pose from Kinfu. Please create a folder named "KinFuSnapshots" in the folder where you call kinfu.
         * \author Francisco Heredia
@@ -69,7 +69,7 @@ namespace pcl
       {
         public:
 
-          typedef pcl::gpu::kinfuLS::PixelRGB PixelRGB;
+          typedef pcl::gpu::kinfuRGBD::PixelRGB PixelRGB;
 
           /** Constructor */
           ScreenshotManager();
@@ -78,9 +78,10 @@ namespace pcl
           ~ScreenshotManager(){}
           
           /** \brief Sets Depth camera intrinsics
-            * \param[in] focal focal length x 
-            * \param height
-            * \param width
+            * \param[in] fx focal length x 
+            * \param[in] fy focal length y
+            * \param[in] cx principal point x
+            * \param[in] cy principal point y
             */
           void
           setCameraIntrinsics (float focal = 575.816f, float height = 480.0f, float width = 640.0f);

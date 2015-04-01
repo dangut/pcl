@@ -42,7 +42,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       template<typename T>
       __global__ void
@@ -65,7 +65,7 @@ namespace pcl
       
           template<typename T>
       __global__ void
-      clearSliceKernel (PtrStep<T> volume, pcl::gpu::kinfuLS::tsdf_buffer buffer, int3 minBounds, int3 maxBounds)
+      clearSliceKernel (PtrStep<T> volume, pcl::gpu::kinfuRGBD::tsdf_buffer buffer, int3 minBounds, int3 maxBounds)
       {
         int x = threadIdx.x + blockIdx.x * blockDim.x;
         int y = threadIdx.y + blockIdx.y * blockDim.y;
@@ -155,7 +155,7 @@ namespace pcl
       void
       initVolume (PtrStep<short2> volume)
       {
-        dim3 block (16, 16);
+        dim3 block (32, 16);
         dim3 grid (1, 1, 1);
         grid.x = divUp (VOLUME_X, block.x);      
         grid.y = divUp (VOLUME_Y, block.y);
@@ -173,7 +173,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       struct Tsdf
       {
@@ -387,7 +387,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       __global__ void
       scaleDepth (const PtrStepSz<ushort> depth, PtrStep<float> scaled, const Intr intr)
@@ -409,7 +409,7 @@ namespace pcl
 
       __global__ void
       tsdf23 (const PtrStepSz<float> depthScaled, PtrStep<short2> volume,
-              const float tranc_dist, const Mat33 Rcurr_inv, const float3 tcurr, const Intr intr, const float3 cell_size, const pcl::gpu::kinfuLS::tsdf_buffer buffer)
+              const float tranc_dist, const Mat33 Rcurr_inv, const float3 tcurr, const Intr intr, const float3 cell_size, const pcl::gpu::kinfuRGBD::tsdf_buffer buffer)
       {
         int x = threadIdx.x + blockIdx.x * blockDim.x;
         int y = threadIdx.y + blockIdx.y * blockDim.y;
@@ -618,8 +618,12 @@ namespace pcl
       integrateTsdfVolume (const PtrStepSz<ushort>& depth, const Intr& intr,
                                         const float3& volume_size, const Mat33& Rcurr_inv, const float3& tcurr, 
                                         float tranc_dist,
-                                        PtrStep<short2> volume, const pcl::gpu::kinfuLS::tsdf_buffer* buffer, DeviceArray2D<float>& depthScaled)
+                                        PtrStep<short2> volume, const pcl::gpu::kinfuRGBD::tsdf_buffer* buffer, DeviceArray2D<float>& depthScaled)
       {
+cudaEvent_t start, stop;
+  float elapsedTime;
+cudaEventCreate(&start);
+  cudaEventRecord(start,0);
         depthScaled.create (depth.rows, depth.cols);
 
         dim3 block_scale (32, 8);
@@ -628,7 +632,12 @@ namespace pcl
         //scales depth along ray and converts mm -> meters. 
         scaleDepth<<<grid_scale, block_scale>>>(depth, depthScaled, intr);
         cudaSafeCall ( cudaGetLastError () );
+cudaEventCreate(&stop);
+ cudaEventRecord(stop,0);
+ cudaEventSynchronize(stop);
 
+ cudaEventElapsedTime(&elapsedTime, start,stop);
+ //printf("depthScaled : %f ms\n" ,elapsedTime);
         float3 cell_size;
         cell_size.x = volume_size.x / buffer->voxels_size.x;
         cell_size.y = volume_size.y / buffer->voxels_size.y;
@@ -637,17 +646,24 @@ namespace pcl
         //dim3 block(Tsdf::CTA_SIZE_X, Tsdf::CTA_SIZE_Y);
         dim3 block (16, 16);
         dim3 grid (divUp (buffer->voxels_size.x, block.x), divUp (buffer->voxels_size.y, block.y));
-
+cudaEventCreate(&start);
+  cudaEventRecord(start,0);
         tsdf23<<<grid, block>>>(depthScaled, volume, tranc_dist, Rcurr_inv, tcurr, intr, cell_size, *buffer);    
         //tsdf23normal_hack<<<grid, block>>>(depthScaled, volume, tranc_dist, Rcurr_inv, tcurr, intr, cell_size);
 
         cudaSafeCall ( cudaGetLastError () );
         cudaSafeCall (cudaDeviceSynchronize ());
+cudaEventCreate(&stop);
+ cudaEventRecord(stop,0);
+ cudaEventSynchronize(stop);
+
+ cudaEventElapsedTime(&elapsedTime, start,stop);
+ //printf("tsdf23 : %f ms\n" ,elapsedTime);
       }
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       void 
-      clearTSDFSlice (PtrStep<short2> volume, pcl::gpu::kinfuLS::tsdf_buffer* buffer, int shiftX, int shiftY, int shiftZ)
+      clearTSDFSlice (PtrStep<short2> volume, pcl::gpu::kinfuRGBD::tsdf_buffer* buffer, int shiftX, int shiftY, int shiftZ)
       {
         int newX = buffer->origin_GRID.x + shiftX;
         int newY = buffer->origin_GRID.y + shiftY;

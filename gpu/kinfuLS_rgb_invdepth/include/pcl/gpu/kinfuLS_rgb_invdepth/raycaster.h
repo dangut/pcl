@@ -36,25 +36,25 @@
  */
 
 
-#ifndef PCL_KINFU_TSDF_RAYCASTERLS_H_
-#define PCL_KINFU_TSDF_RAYCASTERLS_H_
+#ifndef PCL_KINFU_TSDF_RAYCASTER_H_RGBD_
+#define PCL_KINFU_TSDF_RAYCASTER_H_RGBD_
 
 
 #include <pcl/pcl_macros.h>
 #include <pcl/point_types.h>
 #include <pcl/gpu/containers/device_array.h>
-#include <pcl/gpu/kinfu_large_scale/pixel_rgb.h>
+#include <pcl/gpu/kinfuLS_rgb_depth/pixel_rgb.h>
 #include <boost/shared_ptr.hpp>
 //#include <boost/graph/buffer_concepts.hpp>
 #include <Eigen/Geometry>
 
-#include <pcl/gpu/kinfu_large_scale/tsdf_buffer.h>
+#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_buffer.h>
 
 namespace pcl
 {
   namespace gpu
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       class TsdfVolume;
 
@@ -91,7 +91,6 @@ namespace pcl
         /** \brief Runs raycasting algorithm from given camera pose. It writes results to internal fiels.
           * \param[in] volume tsdf volume container
           * \param[in] camera_pose camera pose
-          * \param buffer
           */ 
         void 
         run(const TsdfVolume& volume, const Eigen::Affine3f& camera_pose, tsdf_buffer* buffer);
@@ -110,7 +109,7 @@ namespace pcl
         generateSceneView(View& view, const Eigen::Vector3f& light_source_pose) const;
 
         /** \brief Generates depth image using data raycasted by run method. So call it before.
-          * \param[out] depth output array for depth image        
+          * \param[out] view output array for depth image        
           */
         void
         generateDepthImage(Depth& depth) const;

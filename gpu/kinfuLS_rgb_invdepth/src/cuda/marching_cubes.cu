@@ -48,7 +48,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       //texture<int, 1, cudaReadModeElementType> edgeTex;
       texture<int, 1, cudaReadModeElementType> triTex;
@@ -78,7 +78,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       __device__ int global_count = 0;
       __device__ int output_count;
@@ -265,7 +265,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       struct TrianglesGenerator : public CubeIndexEstimator
       {

@@ -42,7 +42,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       struct ImageGenerator
       {
@@ -130,7 +130,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       __global__ void generateDepthKernel(const float3 R_inv_row3, const float3 t, const PtrStep<float> vmap, PtrStepSz<unsigned short> depth)
       {
@@ -169,13 +169,59 @@ namespace pcl
     }
   }
 }
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
+    {
+      __global__ void generateDepthKernelf(const float3 R_inv_row3, const float3 t, const PtrStep<float> vmap, PtrStepSz<float> depth)
+      {
+        int x = threadIdx.x + blockIdx.x * blockDim.x;
+        int y = threadIdx.y + blockIdx.y * blockDim.y;
+
+        if (x < depth.cols && y < depth.rows)
+        {
+          float result = numeric_limits<float>::quiet_NaN ();
+                  
+          float3 v_g;
+          v_g.x = vmap.ptr (y)[x];        
+          if (!isnan (v_g.x))
+          {
+            v_g.y = vmap.ptr (y +     depth.rows)[x];
+            v_g.z = vmap.ptr (y + 2 * depth.rows)[x]; 
+
+            float v_z = dot(R_inv_row3, v_g - t);
+            
+            result = 1.f / (v_z); //TODO change this!
+          }
+          depth.ptr(y)[x] = result;
+        }      
+      }     
+
+      void
+      generateDepthf (const Mat33& R_inv, const float3& t, const MapArr& vmap, DepthMapf& dst)
+      {
+        dim3 block(32, 8);
+        dim3 grid(divUp(dst.cols(), block.x), divUp(dst.rows(), block.y));
+        
+        generateDepthKernelf<<<grid, block>>>(R_inv.data[2], t, vmap, dst);
+        cudaSafeCall (cudaGetLastError ());
+        cudaSafeCall (cudaDeviceSynchronize ());  
+      }
+    }
+  }
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace pcl
+{
+  namespace device
+  {
+    namespace kinfuRGBD
     {
       __global__ void 
       paint3DViewKernel(const PtrStep<uchar3> colors, PtrStepSz<uchar3> dst, float colors_weight)

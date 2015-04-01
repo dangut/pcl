@@ -1,9 +1,19 @@
-set(SUBSYS_NAME gpu_kinfu_large_scale)
-set(SUBSYS_PATH gpu/kinfu_large_scale)
-set(SUBSYS_DESC "Kinect Fusion implementation, with volume shifting")
+set(SUBSYS_NAME gpu_kinfuLS_rgb_invdepth)
+set(SUBSYS_PATH gpu/kinfuLS_rgb_invdepth)
+set(SUBSYS_DESC "Kinect Fusion Large Scale implementation, with photometric+geometric error minimisation instead of ICP")
 set(SUBSYS_DEPS common visualization io gpu_containers gpu_utils geometry search octree filters kdtree features surface)
 
-set(build FALSE)
+set(build FALSE)    
+
+# Search for OpenCV 
+find_package(OpenCV QUIET) 
+if(OpenCV_FOUND) 
+        message(STATUS "OpenCV was found!! :)") 
+        add_definitions(-DHAVE_OPENCV) 
+else(OpenCV_FOUND) 
+        message(STATUS "OpenCV was not found... :(") 
+endif() 
+
 
 # OpenNI found?
 if(NOT OPENNI_FOUND OR NOT BUILD_OPENNI)
@@ -77,5 +87,3 @@ if (build)
 	add_subdirectory(test)
 	add_subdirectory(tools)
 endif()
-
-

@@ -36,8 +36,8 @@
  */
 
 
-#ifndef PCL_GPU_KINFU_CUDA_UTILS_HPP_
-#define PCL_GPU_KINFU_CUDA_UTILS_HPP_
+#ifndef PCL_GPU_KINFU_CUDA_UTILS_HPP_RGBD_
+#define PCL_GPU_KINFU_CUDA_UTILS_HPP_RGBD_
 //#include <boost/graph/buffer_concepts.hpp>
 
 
@@ -45,7 +45,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {   
       template <class T> 
       __device__ __host__ __forceinline__ void swap ( T& a, T& b )
@@ -66,6 +66,8 @@ namespace pcl
         min() { return 1.175494351e-38f/*FLT_MIN*/; };
         __device__ __forceinline__ static float 
         max() { return 3.402823466e+38f/*FLT_MAX*/; };
+        __device__ __forceinline__ static float 
+        infinity() { return 1.f/0.f; };
       };
 
       template<> struct numeric_limits<short>
@@ -102,6 +104,12 @@ namespace pcl
       operator-(const float3& v1, const float3& v2)
       {
         return make_float3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
+      }
+
+      __device__ __forceinline__ float3
+      operator-(const float3& vec1)
+      {
+         return make_float3(-vec1.x, -vec1.y, -vec1.z); 
       }
 
       __device__ __forceinline__ float3

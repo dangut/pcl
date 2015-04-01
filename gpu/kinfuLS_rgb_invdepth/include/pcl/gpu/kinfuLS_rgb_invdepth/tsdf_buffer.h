@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef PCL_TSDF_BUFFER_STRUCT_H_
-#define PCL_TSDF_BUFFER_STRUCT_H_
+#ifndef PCL_TSDF_BUFFER_STRUCT_H_RGBD_
+#define PCL_TSDF_BUFFER_STRUCT_H_RGBD_
 
 #include <cuda_runtime.h>
 //#include <boost/graph/buffer_concepts.hpp>
@@ -45,7 +45,7 @@ namespace pcl
 {
   namespace gpu
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       /** \brief Structure to handle buffer addresses */
           struct tsdf_buffer

@@ -42,7 +42,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       __global__ void
       computeVmapKernel (const PtrStepSz<unsigned short> depth, PtrStep<float> vmap, float fx_inv, float fy_inv, float cx, float cy)
@@ -63,6 +63,32 @@ namespace pcl
             vmap.ptr (v                 )[u] = vx;
             vmap.ptr (v + depth.rows    )[u] = vy;
             vmap.ptr (v + depth.rows * 2)[u] = vz;
+          }
+          else
+            vmap.ptr (v)[u] = numeric_limits<float>::quiet_NaN ();
+
+        }
+      }
+      
+      __global__ void
+      computeVmapFromInvDepthKernel (const PtrStepSz<float> inv_depth, PtrStep<float> vmap, float fx_inv, float fy_inv, float cx, float cy)
+      {
+        int u = threadIdx.x + blockIdx.x * blockDim.x;
+        int v = threadIdx.y + blockIdx.y * blockDim.y;
+
+        if (u < inv_depth.cols && v < inv_depth.rows)
+        {
+          float z = 1.f / inv_depth.ptr (v)[u]; // load and convert: mm -> meters
+
+          if (!(isnan(z)))
+          {
+            float vx = z * (u - cx) * fx_inv;
+            float vy = z * (v - cy) * fy_inv;
+            float vz = z;
+
+            vmap.ptr (v                 )[u] = vx;
+            vmap.ptr (v + inv_depth.rows    )[u] = vy;
+            vmap.ptr (v + inv_depth.rows * 2)[u] = vz;
           }
           else
             vmap.ptr (v)[u] = numeric_limits<float>::quiet_NaN ();
@@ -118,7 +144,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       void
@@ -135,6 +161,24 @@ namespace pcl
         float fy = intr.fy, cy = intr.cy;
 
         computeVmapKernel<<<grid, block>>>(depth, vmap, 1.f / fx, 1.f / fy, cx, cy);
+        cudaSafeCall (cudaGetLastError ());
+      }
+      
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      void
+      createVMapFromInvDepthf (const Intr& intr, const DepthMapf& inv_depth, MapArr& vmap)
+      {
+        vmap.create (inv_depth.rows () * 3, inv_depth.cols ());
+
+        dim3 block (32, 8);
+        dim3 grid (1, 1, 1);
+        grid.x = divUp (inv_depth.cols (), block.x);
+        grid.y = divUp (inv_depth.rows (), block.y);
+
+        float fx = intr.fx, cx = intr.cx;
+        float fy = intr.fy, cy = intr.cy;
+
+        computeVmapFromInvDepthKernel<<<grid, block>>>(inv_depth, vmap, 1.f / fx, 1.f / fy, cx, cy);
         cudaSafeCall (cudaGetLastError ());
       }
 
@@ -163,7 +207,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       __global__ void
       transformMapsKernel (int rows, int cols, const PtrStep<float> vmap_src, const PtrStep<float> nmap_src,
@@ -245,7 +289,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       template<bool normalize>
       __global__ void
@@ -343,7 +387,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
 
       template<typename T>
@@ -398,7 +442,7 @@ namespace pcl
 {
   namespace device
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       __global__ void
       mergePointNormalKernel (const float4* cloud, const float8* normals, PtrSz<float12> output)

@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef PCL_KINFU_COLOR_VOLUME_H_
-#define PCL_KINFU_COLOR_VOLUME_H_
+#ifndef PCL_KINFU_COLOR_VOLUME_H_RGBD_
+#define PCL_KINFU_COLOR_VOLUME_H_RGBD_
 
 #include <pcl/pcl_macros.h>
 #include <pcl/gpu/containers/device_array.h>
@@ -49,7 +49,7 @@ namespace pcl
 {
   namespace gpu
   {
-    namespace kinfuLS
+    namespace kinfuRGBD
     {
       class TsdfVolume;
 
