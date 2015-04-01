@@ -50,13 +50,13 @@
 #include <pcl/pcl_macros.h>
 
 //Marching cubes includes
-#include <pcl/gpu/kinfuLS_rgb_depth/marching_cubes.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/marching_cubes.h>
 #include <pcl/PolygonMesh.h>
 
 #include <pcl/gpu/containers/device_array.h>
 
 //TSDF volume includes
-#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_volume.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/tsdf_volume.h>
 
 //Eigen Geometry and Transforms
 #include <pcl/common/transforms.h>

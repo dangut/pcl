@@ -39,8 +39,8 @@
 #ifndef PCL_WORLD_MODEL_IMPL_HPP_RGBD_
 #define PCL_WORLD_MODEL_IMPL_HPP_RGBD_
 
-#include <pcl/gpu/kinfuLS_rgb_depth/world_model.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/impl/standalone_marching_cubes.hpp>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/world_model.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/impl/standalone_marching_cubes.hpp>
 
 template <typename PointT>
 void 

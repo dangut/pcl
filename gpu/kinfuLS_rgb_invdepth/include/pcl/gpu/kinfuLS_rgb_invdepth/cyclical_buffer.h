@@ -40,14 +40,14 @@
 #define PCL_CYCLICAL_BUFFER_IMPL_H_RGBD_
 
 #include <pcl/point_types.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_volume.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_buffer.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/tsdf_volume.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/tsdf_buffer.h>
 #include <Eigen/Core>
 //#include <boost/graph/buffer_concepts.hpp>
 #include <cuda_runtime.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/point_intensity.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/point_intensity.h>
 
-#include <pcl/gpu/kinfuLS_rgb_depth/world_model.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/world_model.h>
 
 
 #include <pcl/io/pcd_io.h>

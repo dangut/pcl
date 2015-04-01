@@ -43,12 +43,12 @@
 #include <pcl/pcl_macros.h>
 #include <pcl/point_types.h>
 #include <pcl/gpu/containers/device_array.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/pixel_rgb.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/pixel_rgb.h>
 #include <boost/shared_ptr.hpp>
 //#include <boost/graph/buffer_concepts.hpp>
 #include <Eigen/Geometry>
 
-#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_buffer.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/tsdf_buffer.h>
 
 namespace pcl
 {

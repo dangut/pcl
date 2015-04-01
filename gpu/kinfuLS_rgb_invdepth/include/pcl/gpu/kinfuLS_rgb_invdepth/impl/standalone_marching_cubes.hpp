@@ -38,7 +38,7 @@
 #ifndef PCL_STANDALONE_MARCHING_CUBES_IMPL_HPP_RGBD_
 #define PCL_STANDALONE_MARCHING_CUBES_IMPL_HPP_RGBD_
 
-#include <pcl/gpu/kinfuLS_rgb_depth/standalone_marching_cubes.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/standalone_marching_cubes.h>
 #include <sys/sysinfo.h> 
 
 ///////////////////////////////////////////////////////////////////////////////

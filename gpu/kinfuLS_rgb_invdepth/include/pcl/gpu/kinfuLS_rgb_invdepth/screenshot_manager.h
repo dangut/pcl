@@ -48,7 +48,7 @@
 #include <pcl/pcl_exports.h>
 #include <pcl/gpu/containers/device_array.h>
 #include <pcl/gpu/containers/kernel_containers.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/pixel_rgb.h> 
+#include <pcl/gpu/kinfuLS_rgb_invdepth/pixel_rgb.h> 
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp> 
 //#include <boost/graph/buffer_concepts.hpp>

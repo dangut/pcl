@@ -49,14 +49,14 @@
 
 #include "internal.h"
 
-#include <pcl/gpu/kinfuLS_rgb_depth/float3_operations.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/float3_operations.h>
 #include <pcl/gpu/containers/device_array.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/pixel_rgb.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_volume.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/color_volume.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/raycaster.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/pixel_rgb.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/tsdf_volume.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/color_volume.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/raycaster.h>
 
-#include <pcl/gpu/kinfuLS_rgb_depth/cyclical_buffer.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/cyclical_buffer.h>
 //#include <pcl/gpu/kinfu_large_scale/standalone_marching_cubes.h>
 
 

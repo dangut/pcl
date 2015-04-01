@@ -39,7 +39,7 @@
 #define PCL_CYCLICAL_BUFFER_IMPL_HPP_RGBD_
 
 #include <pcl/common/distances.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/cyclical_buffer.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/cyclical_buffer.h>
 #include "../../../../../src/internal.h"
 
 

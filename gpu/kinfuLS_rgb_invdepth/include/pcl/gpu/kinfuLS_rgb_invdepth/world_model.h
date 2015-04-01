@@ -49,8 +49,8 @@
 #include <pcl/point_types.h>
 #include <pcl/io/pcd_io.h>
 //Marching cubes includes
-#include <pcl/gpu/kinfuLS_rgb_depth/standalone_marching_cubes.h>
-//#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_buffer.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/standalone_marching_cubes.h>
+//#include <pcl/gpu/kinfuLS_rgb_invdepth/tsdf_buffer.h>
 //#include <boost/graph/buffer_concepts.hpp>
 
 

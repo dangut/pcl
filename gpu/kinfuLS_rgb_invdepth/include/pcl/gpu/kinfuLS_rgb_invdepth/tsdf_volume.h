@@ -45,9 +45,9 @@
 #include <Eigen/Core>
 #include <vector>
 
-#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_buffer.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/tsdf_buffer.h>
 
-#include <pcl/gpu/kinfuLS_rgb_depth/point_intensity.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/point_intensity.h>
 
 
 namespace pcl
