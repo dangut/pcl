@@ -35,7 +35,7 @@
  *
  */
 
-#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_volume.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/tsdf_volume.h>
 #include "internal.h"
 #include <algorithm>
 #include <Eigen/Core>

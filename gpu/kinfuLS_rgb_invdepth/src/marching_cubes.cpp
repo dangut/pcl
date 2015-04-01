@@ -35,8 +35,8 @@
 *
 */
 
-#include <pcl/gpu/kinfuLS_rgb_depth/kinfu.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/marching_cubes.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/kinfu.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/marching_cubes.h>
 #include "internal.h"
 
 using namespace pcl;

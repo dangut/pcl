@@ -36,7 +36,7 @@
  */
 
 
-#include <pcl/gpu/kinfuLS_rgb_depth/cyclical_buffer.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/impl/cyclical_buffer.hpp>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/cyclical_buffer.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/impl/cyclical_buffer.hpp>
 
 

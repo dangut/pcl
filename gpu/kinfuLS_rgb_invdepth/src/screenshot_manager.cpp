@@ -40,7 +40,7 @@
 
 #ifndef PCL_SCREENSHOT_MANAGER_CPP_RGBD_
 #define PCL_SCREENSHOT_MANAGER_CPP_RGBD_
-#include <pcl/gpu/kinfuLS_rgb_depth/screenshot_manager.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/screenshot_manager.h>
 
 namespace pcl
 {

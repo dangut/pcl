@@ -39,7 +39,7 @@
 #include <algorithm>
 
 #include <pcl/common/time.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/kinfu.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/kinfu.h>
 
 
 #include <Eigen/Core>

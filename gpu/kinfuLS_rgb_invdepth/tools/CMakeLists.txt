@@ -27,7 +27,7 @@ if(OpenCV_FOUND)
 endif() 
 	
   ## KINECT FUSION
-  set(the_target pcl_kinfuLS_rgb_depth)
+  set(the_target pcl_kinfuLS_rgb_invdepth)
   set(srcs kinfuRGBD_app.cpp capture.cpp evaluation.cpp)
 
   source_group("Source Files" FILES ${srcs} )
@@ -38,8 +38,8 @@ if(OpenCV_FOUND)
         target_link_libraries(${the_target} ${OpenCV_LIBS}) 
 endif()   
   ## STANDALONE MARCHING CUBES
-  set(the_target pcl_kinfuLS_rgb_depth_mesh_output)
-  set(srcs process_kinfuLS_rgb_depth_output.cpp)
+  set(the_target pcl_kinfuLS_rgb_invdepth_mesh_output)
+  set(srcs process_kinfuLS_rgb_invdepth_output.cpp)
 
   PCL_ADD_EXECUTABLE_OPT_BUNDLE(${the_target} ${SUBSYS_NAME} ${srcs} ${hdrs})
   target_link_libraries(${the_target} pcl_common pcl_io ${OPENNI_LIBRARIES} pcl_visualization pcl_gpu_kinfuLS_rgb_invdepth pcl_filters)

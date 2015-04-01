@@ -46,7 +46,7 @@
 
 #include <iostream> // used by operator << in Struct Intr
 
-#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_buffer.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/tsdf_buffer.h>
 
 //using namespace pcl::gpu;
 

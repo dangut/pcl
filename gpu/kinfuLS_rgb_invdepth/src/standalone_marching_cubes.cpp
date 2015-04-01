@@ -37,7 +37,7 @@
 
 #include <pcl/point_types.h>
 #include <pcl/impl/instantiate.hpp>
-#include <pcl/gpu/kinfuLS_rgb_depth/standalone_marching_cubes.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/impl/standalone_marching_cubes.hpp>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/standalone_marching_cubes.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/impl/standalone_marching_cubes.hpp>
 
 //~ PCL_INSTANTIATE(StandaloneMarchingCubes, (pcl::PointXYZI));
