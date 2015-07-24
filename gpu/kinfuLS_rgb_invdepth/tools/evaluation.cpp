@@ -43,10 +43,16 @@ using namespace std;
 
 
 //TUM KInect
-const float Evaluation::fx = 525.0f;
-const float Evaluation::fy = 525.0f;
-const float Evaluation::cx = 319.5f;
-const float Evaluation::cy = 239.5f;
+//const float Evaluation::fx = 525.0f;
+//const float Evaluation::fy = 525.0f;
+//const float Evaluation::cx = 319.5f;
+//const float Evaluation::cy = 239.5f;
+
+//fr3
+//const float Evaluation::fx = 535.40f;
+//const float Evaluation::fy = 539.2f;
+//const float Evaluation::cx = 320.1f;
+//const float Evaluation::cy = 247.6f;
 
 //////My asus (Daniel)
 //const float Evaluation::fx = 543.78f;
@@ -54,11 +60,11 @@ const float Evaluation::cy = 239.5f;
 //const float Evaluation::cx = 313.45f;
 //const float Evaluation::cy = 235.00f;
 
-//Handa
-//const float Evaluation::fx = 481.20f;
-//const float Evaluation::fy = -480.0f;
-//const float Evaluation::cx = 319.5f;
-//const float Evaluation::cy = 239.5f;
+//////Handa
+const float Evaluation::fx = 481.20f;
+const float Evaluation::fy = -480.0f;
+const float Evaluation::cx = 319.5f;
+const float Evaluation::cy = 239.5f;
 
 #ifndef HAVE_OPENCV
 
@@ -94,6 +100,7 @@ Evaluation::Evaluation(const std::string& folder) : folder_(folder), visualizati
   if (folder_[folder_.size() - 1] != '\\' && folder_[folder_.size() - 1] != '/')
       folder_.push_back('/');
 
+  
   cout << "Initializing evaluation from folder: " << folder_ << endl;
   string depth_file = folder_ + "depth_associated.txt";
   string rgb_file = folder_ + "rgb_associated.txt";
@@ -103,6 +110,7 @@ Evaluation::Evaluation(const std::string& folder) : folder_(folder), visualizati
 
   cout << "Associate: " << folder_ << endl;
   associate_depth_rgb(depth_file, rgb_file);
+  
 
   //string associated_file = folder_ + "associated.txt";
 }
@@ -120,7 +128,8 @@ void Evaluation::associate_depth_rgb(const std::string& file_depth, const std::s
   if(!iff_depth || !iff_rgb)
   {
     cout << "Can't read rgbd" << file_depth << endl;
-    exit(1);
+    //exit(1);
+    return;
   }
   // ignore three header lines
   iff_depth.getline(buffer, sizeof(buffer));
@@ -145,6 +154,7 @@ void Evaluation::setMatchFile(const std::string& file)
 {
   string full = folder_ + file;
   ifstream iff(full.c_str());  
+  std::cout << full << std::endl;
   if(!iff)
   {
     cout << "Can't read " << file << endl;
@@ -169,7 +179,8 @@ void Evaluation::readFile(const string& file, vector< pair<double,string> >& out
   if(!iff)
   {
     cout << "Can't read" << file << endl;
-    exit(1);
+    //exit(1);
+    return;
   }
 
   // ignore three header lines
@@ -271,7 +282,10 @@ bool Evaluation::grab (double stamp, PtrStepSz<const unsigned short>& depth, Ptr
       return false;
 
   string depth_file = folder_ + accociations_[i].name1;
+  string str_png(".png");
+  //depth_file.replace(depth_file.find(str_png),str_png.length(),".ppm");
   string color_file = folder_ + accociations_[i].name2;
+  //color_file.replace(color_file.find(str_png),str_png.length(),".ppm");
   
   cv::Mat d_img = cv::imread(depth_file, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
   if(d_img.empty())

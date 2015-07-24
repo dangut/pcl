@@ -2,7 +2,7 @@
  * Software License Agreement (BSD License)
  *
  *  Point Cloud Library (PCL) - www.pointclouds.org
- *  Copyright (c) 2010-2011, Willow Garage, Inc.
+ *  Copyright (c) 2011, Willow Garage, Inc.
  *
  *  All rights reserved.
  *
@@ -35,8 +35,24 @@
  *
  */
 
+#ifndef PCL_KINFU_PIXEL_RGB_HPP_RGBD_
+#define PCL_KINFU_PIXEL_RGB_HPP_RGBD_
+//#include <boost/graph/buffer_concepts.hpp>
 
-#include <pcl/gpu/kinfuLS_rgb_invdepth/cyclical_buffer.h>
-#include <pcl/gpu/kinfuLS_rgb_invdepth/impl/cyclical_buffer.hpp>
+namespace pcl
+{
+  namespace gpu
+  {
+    namespace kinfuRGBD
+    {
+      /** \brief Input/output pixel format for KinfuTracker */
+        
+      struct PixelRGB
+      {
+        unsigned char r, g, b;
+      };
+    }
+  }
+}
 
-
+#endif /* PCL_KINFU_PIXEL_RGB_HPP_ */

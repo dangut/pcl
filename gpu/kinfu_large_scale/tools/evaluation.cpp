@@ -41,11 +41,15 @@
 using namespace pcl::gpu;
 using namespace std;
 
-const float Evaluation::fx = 525.0f;
-const float Evaluation::fy = 525.0f;
+//const float Evaluation::fx = 525.0f;
+//const float Evaluation::fy = 525.0f;
+//const float Evaluation::cx = 319.5f;
+//const float Evaluation::cy = 239.5f;
+//Handa
+const float Evaluation::fx = 481.20f;
+const float Evaluation::fy = -480.0f;
 const float Evaluation::cx = 319.5f;
 const float Evaluation::cy = 239.5f;
-
 #ifndef HAVE_OPENCV
 
 struct Evaluation::Impl {};
@@ -80,6 +84,7 @@ Evaluation::Evaluation(const std::string& folder) : folder_(folder), visualizati
   if (folder_[folder_.size() - 1] != '\\' && folder_[folder_.size() - 1] != '/')
       folder_.push_back('/');
 
+  /*
   cout << "Initializing evaluation from folder: " << folder_ << endl;
   string depth_file = folder_ + "depth.txt";
   string rgb_file = folder_ + "rgb.txt";
@@ -88,6 +93,7 @@ Evaluation::Evaluation(const std::string& folder) : folder_(folder), visualizati
   readFile(rgb_file, rgb_stamps_and_filenames_);  
 
   string associated_file = folder_ + "associated.txt";
+     */
 }
 
 void Evaluation::setMatchFile(const std::string& file)
@@ -252,7 +258,7 @@ bool Evaluation::grab (double stamp, PtrStepSz<const unsigned short>& depth, Ptr
   return true;  
 }
 
-void Evaluation::saveAllPoses(const pcl::gpu::KinfuTracker& kinfu, int frame_number, const std::string& logfile) const
+void Evaluation::saveAllPoses(const pcl::gpu::kinfuLS::KinfuTracker& kinfu, int frame_number, const std::string& logfile) const
 {   
   size_t total = accociations_.empty() ? depth_stamps_and_filenames_.size() : accociations_.size();
 

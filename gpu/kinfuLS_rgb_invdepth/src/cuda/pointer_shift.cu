@@ -1,4 +1,4 @@
-#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_buffer.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/tsdf_buffer.h>
 
 __device__ __forceinline__ static void
 shift_tsdf_pointer(short2 ** value, pcl::gpu::kinfuRGBD::tsdf_buffer buffer)

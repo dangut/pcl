@@ -55,9 +55,9 @@
 //
 
 #include <pcl/console/parse.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/kinfu.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/raycaster.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/marching_cubes.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/kinfu.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/raycaster.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/marching_cubes.h>
 #include <pcl/gpu/containers/initialization.h>
 
 #include <pcl/common/time.h>

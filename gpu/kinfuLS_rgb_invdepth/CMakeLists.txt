@@ -1,5 +1,5 @@
-set(SUBSYS_NAME gpu_kinfuLS_rgb_depth)
-set(SUBSYS_PATH gpu/kinfuLS_rgb_depth)
+set(SUBSYS_NAME gpu_kinfuLS_rgb_invdepth)
+set(SUBSYS_PATH gpu/kinfuLS_rgb_invdepth)
 set(SUBSYS_DESC "Kinect Fusion Large Scale implementation, with photometric+geometric error minimisation instead of ICP")
 set(SUBSYS_DEPS common visualization io gpu_containers gpu_utils geometry search octree filters kdtree features surface)
 

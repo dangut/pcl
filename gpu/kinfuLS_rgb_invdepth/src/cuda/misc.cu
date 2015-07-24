@@ -101,7 +101,7 @@ namespace pcl
 
         int value =  src.ptr (y)[x];
 
-        if (value > 0)
+        if ((value > 0) && (value > 300))
           dst.ptr (y)[x] = 1000.f / __int2float_rn( max( 0 , min( value , 10000 ) )); 
         
         return;

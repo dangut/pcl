@@ -53,9 +53,9 @@ Work in progress: patch by Marco (AUG,19th 2012)
 
 #include <boost/filesystem.hpp>
 
-#include <pcl/gpu/kinfuLS_rgb_depth/kinfu.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/raycaster.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/marching_cubes.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/kinfu.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/raycaster.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/marching_cubes.h>
 #include <pcl/gpu/containers/initialization.h>
 
 #include <pcl/common/time.h>
@@ -83,7 +83,7 @@ Work in progress: patch by Marco (AUG,19th 2012)
 typedef pcl::ScopeTime ScopeTimeT;
 
 #include "../src/internal.h"
-#include <pcl/gpu/kinfuLS_rgb_depth/screenshot_manager.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/screenshot_manager.h>
 
 using namespace std;
 using namespace pcl;

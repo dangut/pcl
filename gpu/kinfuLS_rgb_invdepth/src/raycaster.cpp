@@ -35,8 +35,8 @@
  *
  */
 
-#include <pcl/gpu/kinfuLS_rgb_depth/raycaster.h>
-#include <pcl/gpu/kinfuLS_rgb_depth/tsdf_volume.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/raycaster.h>
+#include <pcl/gpu/kinfuLS_rgb_invdepth/tsdf_volume.h>
 #include "internal.h"
 
 using namespace pcl;

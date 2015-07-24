@@ -22,6 +22,10 @@ if(OPENNI_FOUND)
 
   PCL_ADD_EXECUTABLE_OPT_BUNDLE("${the_target}" "${SUBSYS_NAME}" ${srcs} ${hdrs})
   target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_kdtree pcl_features pcl_surface)
+  
+  if(OpenCV_FOUND) 
+        target_link_libraries(${the_target} ${OpenCV_LIBS}) 
+endif()  
 
   ## KINECT FUSION
   set(the_target pcl_kinfu_largeScale)
@@ -32,6 +36,10 @@ if(OPENNI_FOUND)
   PCL_ADD_EXECUTABLE_OPT_BUNDLE("${the_target}" "${SUBSYS_NAME}" ${srcs} ${hdrs})
   target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_octree)
   
+  if(OpenCV_FOUND) 
+        target_link_libraries(${the_target} ${OpenCV_LIBS}) 
+endif()  
+  
   ## STANDALONE MARCHING CUBES
   set(the_target pcl_kinfu_largeScale_mesh_output)
   set(srcs process_kinfu_large_scale_output.cpp)
@@ -39,12 +47,20 @@ if(OPENNI_FOUND)
   PCL_ADD_EXECUTABLE_OPT_BUNDLE("${the_target}" "${SUBSYS_NAME}" ${srcs} ${hdrs})
   target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_filters)
   
+  if(OpenCV_FOUND) 
+        target_link_libraries(${the_target} ${OpenCV_LIBS}) 
+endif()  
+  
   ## RECORD MAPS_RGB
   set(the_target pcl_record_kinect_maps_rgb)
   set(srcs record_maps_rgb.cpp)
 
   PCL_ADD_EXECUTABLE_OPT_BUNDLE("${the_target}" "${SUBSYS_NAME}" ${srcs} ${hdrs})
   target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_filters)
+  
+  if(OpenCV_FOUND) 
+        target_link_libraries(${the_target} ${OpenCV_LIBS}) 
+endif()  
         
 
 endif(OPENNI_FOUND)

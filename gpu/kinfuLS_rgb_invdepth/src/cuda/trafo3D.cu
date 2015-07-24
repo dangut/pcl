@@ -259,6 +259,113 @@ namespace pcl
       ///////////////////////////////////////////////////////////////////////////////////////////////////////      
       ///////////////////////////////////////////////////////////////////////////////////////////////////////  
       
+      __global__ void  
+      interpolateImagesAndGradientsKernel ( int cols, int rows, PtrStepSz<float> proj_dst, PtrStepSz<float> depth_interp, PtrStepSz<float> intensity_interp, 
+                                                             PtrStepSz<float> xGradDepth_interp,  PtrStepSz<float> yGradDepth_interp,
+                                                             PtrStepSz<float> xGradInt_interp, PtrStepSz<float> yGradInt_interp, int colOff)
+      {
+        int x = threadIdx.x + blockIdx.x * blockDim.x;
+        int y = threadIdx.y + blockIdx.y * blockDim.y;
+
+        if (x >= cols || y >= rows)
+          return;
+        
+        depth_interp.ptr (y)[x] = numeric_limits<float>::quiet_NaN ();
+        intensity_interp.ptr (y)[x] = numeric_limits<float>::quiet_NaN (); 
+        xGradDepth_interp.ptr (y)[x] = numeric_limits<float>::quiet_NaN ();
+        yGradDepth_interp.ptr (y)[x] = numeric_limits<float>::quiet_NaN ();
+        xGradInt_interp.ptr (y)[x] = numeric_limits<float>::quiet_NaN ();
+        yGradInt_interp.ptr (y)[x] = numeric_limits<float>::quiet_NaN ();
+                                                             
+        float x_proj_f = numeric_limits<float>::quiet_NaN ();
+        float y_proj_f = numeric_limits<float>::quiet_NaN ();
+        
+        x_proj_f = proj_dst.ptr(y)[x] + 0.5f;
+        y_proj_f = proj_dst.ptr(y + rows)[x]  + 0.5f;
+
+        if (isnan(x_proj_f) || isnan(y_proj_f))
+          return;
+        	
+        float depth_value = tex2D(texRefDepth, x_proj_f , y_proj_f);
+        float intensity_value = tex2D(texRefIntensity, x_proj_f, y_proj_f);
+        
+        float res_hor;
+        float res_vert;
+        
+        if (!isnan(depth_value))
+        {
+          depth_interp.ptr (y)[x] = depth_value;
+          
+          res_hor = 0;
+          res_vert = 0;          
+
+          for (int dx=-1; dx<2; dx++)
+          {
+            float temp;
+            
+            for (int dy=-1; dy<2; dy++)
+            {
+              float cx = min (max (0.f, x_proj_f + __int2float_rn(dx)), __int2float_rn(cols));
+              float cy = min (max (0.f, y_proj_f + __int2float_rn(dy)), __int2float_rn(rows));
+
+              float weight_hor = dx * (2 - dy * dy); 
+              float weight_vert = dy * (2 - dx * dx);
+              temp = tex2D(texRefDepth, cx, cy);
+              
+              res_hor +=  temp*weight_hor;
+              res_vert +=  temp*weight_vert;
+              
+              if (isnan(temp)) 
+                break;
+            }
+            
+            if (isnan(temp)) 
+                break;
+          
+          }
+        }
+        
+        xGradDepth_interp.ptr (y)[x] =  (res_hor) / 8.f; 
+        yGradDepth_interp.ptr (y)[x] = (res_vert) / 8.f;
+        
+        if (!isnan(intensity_value))
+        {
+          intensity_interp.ptr (y)[x] = intensity_value;
+          
+          res_hor = 0;
+          res_vert = 0;
+
+          for (int dx=-1; dx<2; dx++)
+          {
+            float temp;
+            
+            for (int dy=-1; dy<2; dy++)
+            {
+              float cx = min (max (0.f, x_proj_f + __int2float_rn(dx)), __int2float_rn(cols));
+              float cy = min (max (0.f, y_proj_f + __int2float_rn(dy)), __int2float_rn(rows));
+
+              float weight_hor = dx * (2 - dy * dy); 
+              float weight_vert = dy * (2 - dx * dx);
+              temp = tex2D(texRefIntensity, cx, cy);
+              
+              res_hor +=  temp*weight_hor;
+              res_vert +=  temp*weight_vert;
+              
+              if (isnan(temp)) 
+                break;
+            }
+            
+            if (isnan(temp)) 
+                break;
+          
+          }
+        }
+        
+        xGradInt_interp.ptr (y)[x] =  (res_hor) / 8.f; 
+        yGradInt_interp.ptr (y)[x] = (res_vert) / 8.f;
+        
+      }
+      
       __global__ void 
       partialVisibilityKernel (int cols, int rows,  const PtrStepSz<float> depth_src, const PtrStep<float> depth_dst, PtrStep<float> gbuf,
                                      const Mat33 rotation, const float3 translation, const Intr intr, float geom_tol, int geom_error_type)
@@ -295,18 +402,29 @@ namespace pcl
 
             if ((x_dst > 0) && (x_dst < (cols-1)) && (y_dst > 0) && (y_dst < (rows-1)))
             {
-                float depth = X_dst.z;
-                
-                if (geom_error_type == INV_DEPTH)
-                  depth = 1.f / X_dst.z;
-                  
                 int x_int = __float2int_rn(x_dst);
                 int y_int = __float2int_rn(y_dst);
                 
+                if (geom_error_type == INV_DEPTH)
+                {
+                  float inv_depth = 1.f / X_dst.z;
+                  
+                  if (abs(inv_depth -  depth_dst.ptr (y_int)[x_int]) < geom_tol)
+                    is_visible = 1.f;
+                }
+                else //geom_error_type == DEPTH
+                {
+                  float depth = X_dst.z;
+                  
+                  if (abs(depth -  depth_dst.ptr (y_int)[x_int]) < geom_tol)
+                    is_visible = 1.f;
+                }
+                  
+                
+                
                 //Also consider a point not visible if it is projected in front of corresp. point in dst
                 //that would be a point behind the camera or a sign of poor odometry estimation
-                if (abs(depth - depth_dst.ptr (y_int)[x_int]) < geom_tol)
-                  is_visible = 1.f;
+                
                     
             }
           }
@@ -359,6 +477,97 @@ namespace pcl
           if (tid == 0)
             output[blockIdx.x] = smem[0];
         }
+        
+        __global__ void 
+      liftWarpAndProjKernelInvDepth (int cols, int rows,  const PtrStepSz<float> depth_src, 
+                                     PtrStep<float> proj_dst, PtrStep<float> depth_dst, 
+                                     const Mat33 rotation, const float3 translation, const Intr intr)
+      {
+        int x = threadIdx.x + blockIdx.x * blockDim.x;
+        int y = threadIdx.y + blockIdx.y * blockDim.y;
+
+        if (x >= cols || y >= rows)
+          return;
+          
+        proj_dst.ptr(y)[x] = numeric_limits<float>::quiet_NaN (); 
+        proj_dst.ptr(y + rows)[x] = numeric_limits<float>::quiet_NaN (); 	
+        depth_dst.ptr(y)[x] = numeric_limits<float>::quiet_NaN ();  
+        //depth_dst.ptr(y)[x] =  depth_src.ptr (y)[x]; 
+
+        float3 X_dst, X_src;
+        float x_dst, y_dst;
+        float z = 1.f / depth_src.ptr (y)[x];
+
+        if (isnan(z))
+          return;
+                
+        X_src.x = (__int2float_rn(x) - intr.cx) * (1.f/intr.fx) * z;
+        X_src.y = (__int2float_rn(y) - intr.cy) * (1.f/intr.fy) * z;
+        X_src.z = 1.f * z;
+
+        X_dst = rotation*X_src + translation;
+        //X_dst = X_src;
+
+        x_dst = ( X_dst.x / X_dst.z ) * intr.fx + intr.cx; 
+        y_dst = ( X_dst.y / X_dst.z ) * intr.fy + intr.cy; 
+        
+
+        if ((x_dst > 0) && (x_dst < (cols-1)) && (y_dst > 0) && (y_dst < (rows-1)))
+        {
+          proj_dst.ptr(y)[x] = x_dst;
+          proj_dst.ptr(y + rows)[x] = y_dst;
+          depth_dst.ptr(y)[x] = 1.f / X_dst.z;	    	
+        }
+
+        
+
+        return;
+      }
+      
+      
+      __global__ void 
+      liftWarpAndProjKernelDepth (int cols, int rows,  const PtrStepSz<float> depth_src, 
+                                     PtrStep<float> proj_dst, PtrStep<float> depth_dst, 
+                                     const Mat33 rotation, const float3 translation, const Intr intr)
+      {
+        int x = threadIdx.x + blockIdx.x * blockDim.x;
+        int y = threadIdx.y + blockIdx.y * blockDim.y;
+
+        if (x >= cols || y >= rows)
+          return;
+          
+        proj_dst.ptr(y)[x] = numeric_limits<float>::quiet_NaN (); 
+        proj_dst.ptr(y + rows)[x] = numeric_limits<float>::quiet_NaN (); 	
+        depth_dst.ptr(y)[x] = numeric_limits<float>::quiet_NaN ();  
+        //depth_dst.ptr(y)[x] =  depth_src.ptr (y)[x];
+
+        float3 X_dst, X_src;
+        float x_dst, y_dst;
+        float z = depth_src.ptr (y)[x];
+
+        if (isnan(z))
+          return;
+
+                
+        X_src.x = (__int2float_rn(x) - intr.cx) * (1.f/intr.fx) * z;
+        X_src.y = (__int2float_rn(y) - intr.cy) * (1.f/intr.fy) * z;
+        X_src.z = 1.f * z;
+
+        X_dst = rotation*X_src + translation;
+        //X_dst = X_src;
+
+        x_dst = ( X_dst.x / X_dst.z ) * intr.fx + intr.cx; 
+        y_dst = ( X_dst.y / X_dst.z ) * intr.fy + intr.cy; 
+
+        if ((x_dst > 0) && (x_dst < (cols-1)) && (y_dst > 0) && (y_dst < (rows-1)))
+        {
+          proj_dst.ptr(y)[x] = x_dst;
+          proj_dst.ptr(y + rows)[x] = y_dst;
+          depth_dst.ptr(y)[x] = X_dst.z;	    	
+        }
+        
+        return;
+      }
  
       ///////////////////////////////////////////////////////////////
       float
@@ -594,6 +803,99 @@ namespace pcl
 
         return elapsedTime;
       };
+      
+      float 
+      liftWarpAndProj (const DepthMapf& depth_src, DeviceArray2D<float>& proj_dst, DepthMapf& depth_dst,
+                                   Mat33 rotation, float3 translation, const Intr& intr, int depth_error_type)  
+       {
+          /////////////////////////////////////////
+          cudaEvent_t start, stop;
+          float elapsedTime;
+          cudaEventCreate(&start);
+          cudaEventRecord(start,0);
+          /////////////////////////////////////////////
+
+          dim3 block (32, 8);
+          dim3 grid (divUp (depth_src.cols (), block.x), divUp (depth_src.rows (), block.y));
+          
+          if (depth_error_type == DEPTH)
+          {
+            liftWarpAndProjKernelDepth<<<grid, block>>>(depth_src.cols(), depth_src.rows(),  depth_src, proj_dst, depth_dst, rotation, translation, intr);	          
+
+            cudaSafeCall (cudaDeviceSynchronize());
+            cudaSafeCall ( cudaGetLastError () );		
+          }
+          else
+          {            
+            liftWarpAndProjKernelInvDepth<<<grid, block>>>(depth_src.cols(), depth_src.rows(),  depth_src, proj_dst, depth_dst, rotation, translation, intr);			
+            cudaSafeCall (cudaDeviceSynchronize());
+            cudaSafeCall ( cudaGetLastError () );		
+          }	
+
+          //////////////////////////////////////////////////////////////
+          cudaEventCreate(&stop);
+          cudaEventRecord(stop,0);
+          cudaEventSynchronize(stop);
+          cudaEventElapsedTime(&elapsedTime, start,stop);
+          //printf("reduce to final depth System took : %f ms\n" ,elapsedTime);
+          ////////////////////////////////////////////////////////
+
+          return elapsedTime;
+       };
+       
+       ///////////////////////////////////////////////////////////////
+      float 
+      interpolateImagesAndGradients  (DeviceArray2D<float>& proj_dst, const DepthMapf& depth, const IntensityMapf& intensity,
+                                      DepthMapf& depth_interp, IntensityMapf& intensity_interp, 
+                                      DeviceArray2D<float>& xGradDepth_interp, DeviceArray2D<float>& yGradDepth_interp,
+                                      DeviceArray2D<float>& xGradInt_interp, DeviceArray2D<float>& yGradInt_interp)
+                              
+      {
+        /////////////////////////////////////////
+        cudaEvent_t start, stop;
+        float elapsedTime;
+        cudaEventCreate(&start);
+        cudaEventRecord(start,0);
+        /////////////////////////////////////////////
+
+        //src here is D1 and dst is D1 warped towards D0. depth_prev is D0.
+        // Allocate CUDA array in device memory
+        cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc(8*sizeof(float), 0, 0, 0, cudaChannelFormatKindFloat);
+
+        // Set texture reference parameters
+        texRefDepth.addressMode[0] = cudaAddressModeClamp;
+        texRefDepth.addressMode[1] = cudaAddressModeClamp;        
+        texRefDepth.filterMode = cudaFilterModeLinear;  
+        texRefDepth.normalized = false;
+
+        int colOff = 0;
+
+        cudaSafeCall (cudaBindTexture2D(0, texRefDepth, depth.ptr(), channelDesc, depth.cols(), depth.rows(),  depth.step()));
+        cudaSafeCall (cudaBindTexture2D(0, texRefIntensity, intensity.ptr(), channelDesc, intensity.cols(), intensity.rows(),  intensity.step()));
+
+        dim3 block (32, 8);
+        dim3 grid (divUp (depth_interp.cols (), block.x), divUp (depth_interp.rows (), block.y));
+
+        interpolateImagesAndGradientsKernel<<<grid, block>>>(depth.cols(), depth.rows(), proj_dst, depth_interp, intensity_interp, 
+                                                             xGradDepth_interp,  yGradDepth_interp,
+                                                             xGradInt_interp, yGradInt_interp, colOff);
+
+        cudaSafeCall (cudaDeviceSynchronize());
+        cudaSafeCall ( cudaGetLastError () );
+        cudaSafeCall (cudaUnbindTexture(texRefDepth) );
+        cudaSafeCall (cudaUnbindTexture(texRefIntensity) );
+
+        //////////////////////////////////////////////////////////////
+        cudaEventCreate(&stop);
+        cudaEventRecord(stop,0);
+        cudaEventSynchronize(stop);
+        cudaEventElapsedTime(&elapsedTime, start,stop);
+        //printf("reduce to final depth System took : %f ms\n" ,elapsedTime);
+        ////////////////////////////////////////////////////////
+
+        return elapsedTime;
+
+      };	
     }
   }
 }

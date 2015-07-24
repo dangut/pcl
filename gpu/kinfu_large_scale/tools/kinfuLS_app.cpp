@@ -1025,6 +1025,43 @@ struct KinFuLSApp
     }
     c.disconnect();       
   }
+  
+  void
+  startMainLoopImageSequence ()
+  {   
+    using namespace openni_wrapper;
+    typedef boost::shared_ptr<DepthImage> DepthImagePtr;
+    typedef boost::shared_ptr<Image>      ImagePtr;
+
+
+    double currentIndex = 0;
+    int num_failures = 0;
+    while (true)
+    {     
+      //boost::this_thread::sleep (boost::posix_time::millisec (1000));
+        bool grab_success = evaluation_ptr_->grab(currentIndex, depth_, rgb24_);
+        if (grab_success)
+        {
+          num_failures = 0;
+          try { this->execute (depth_, rgb24_, true); }
+          catch (const std::bad_alloc& /*e*/) { cout << "Bad alloc" << endl; break; }
+          catch (const std::exception& /*e*/) { cout << "Exception" << endl; break; }                
+        }
+        else
+        {
+          num_failures+=1;
+        }
+        
+        scene_cloud_view_.cloud_viewer_.spinOnce (3);
+        currentIndex += 1; 
+        
+        if (num_failures == 10) 
+          break;           
+    } 
+     exit_ = true;
+         
+  }
+
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void
@@ -1353,10 +1390,24 @@ main (int argc, char* argv[])
 
   // set verbosity level
   pcl::console::setVerbosityLevel(pcl::console::L_VERBOSE);
-  try { app.startMainLoop (triggered_capture); }  
-  catch (const pcl::PCLException& /*e*/) { cout << "PCLException" << endl; }
-  catch (const std::bad_alloc& /*e*/) { cout << "Bad alloc" << endl; }
-  catch (const std::exception& /*e*/) { cout << "Exception" << endl; }
+  
+  if (app.evaluation_ptr_){
+     std::cout << "starting main loop image sequence\n";
+      try { app.startMainLoopImageSequence(); }  
+      catch (const pcl::PCLException& e) { return cout << e.detailedMessage() << endl, -1; }
+     //catch (const pcl::PCLException& /*e*/) { cout << "PCLException" << endl; }
+     catch (const std::bad_alloc& /*e*/) { cout << "Bad alloc" << endl; }
+     catch (const std::exception& /*e*/) { cout << "Exception" << endl; }
+
+  }else{  
+          std::cout << "starting main loop\n";
+     try { app.startMainLoop (triggered_capture); }  
+     catch (const pcl::PCLException& e) { return cout << e.detailedMessage() << endl, -1; }
+     //catch (const pcl::PCLException& /*e*/) { cout << "PCLException" << endl; }
+     catch (const std::bad_alloc& /*e*/) { cout << "Bad alloc" << endl; }
+     catch (const std::exception& /*e*/) { cout << "Exception" << endl; }
+  }
+  
 
   //~ #ifdef HAVE_OPENCV
   //~ for (size_t t = 0; t < app.image_view_.views_.size (); ++t)
