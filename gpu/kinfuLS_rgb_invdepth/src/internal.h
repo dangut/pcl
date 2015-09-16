@@ -323,16 +323,6 @@ namespace pcl
 
 
       ///Visual Odometry functions ////////////////////////////////
-      
-      float 
-      liftWarpAndProj (const DepthMapf& depth_src, DeviceArray2D<float>& proj_dst, DepthMapf& depth_dst,
-                                   Mat33 rotation, float3 translation, const Intr& intr, int depth_error_type);
-                                   
-       float 
-      interpolateImagesAndGradients  (DeviceArray2D<float>& proj_dst, const DepthMapf& depth, const IntensityMapf& intensity,
-                                      DepthMapf& depth_interp, IntensityMapf& intensity_interp, 
-                                      DeviceArray2D<float>& xGradDepth_interp, DeviceArray2D<float>& yGradDepth_interp,
-                                      DeviceArray2D<float>& xGradInt_interp, DeviceArray2D<float>& yGradInt_interp);
 
       float buildSystem (const float3 delta_trans, const float3 delta_rot,
                          const DepthMapf& D0, const IntensityMapf& I0,
@@ -343,20 +333,7 @@ namespace pcl
                          float sigma_depth, float sigma_int,
                          float bias_depth, float bias_int,                         
                          const Intr& intr, const int size_A,
-                         DeviceArray2D<float_type>& gbuf, DeviceArray<float_type>& mbuf, float_type* matrixA_host, float_type* vectorB_host);   
-                         
-      float 
-      buildSystem2 (const float3 delta_trans, const float3 delta_rot,
-                   const DeviceArray2D<float> proj_in0,
-                   const DepthMapf& D0, const IntensityMapf& I0,
-                   const GradientMap& gradD0_x, const GradientMap& gradD0_y, 
-                   const GradientMap& gradI0_x, const GradientMap& gradI0_y,
-                   const DepthMapf& D1, const IntensityMapf& I1,
-                   int Mestimator, int depth_error_type, int weighting,
-                   float sigma_depth, float sigma_int,
-                   float bias_depth, float bias_int,
-                   const Intr& intr, const int size_A,
-                   DeviceArray2D<float_type>& gbuf, DeviceArray<float_type>& mbuf, float_type* matrixA_host, float_type* vectorB_host);
+                         DeviceArray2D<float_type>& gbuf, DeviceArray<float_type>& mbuf, float_type* matrixA_host, float_type* vectorB_host);     
                          
       /** \brief Warps I1 towards I0
         * \param[in] curr intensity map

@@ -110,6 +110,8 @@ namespace pcl
   }
 }
 
+    
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 pcl::gpu::kinfuRGBD::KinfuTracker::KinfuTracker (const Vector3f &volume_size, const float shiftingDistance, int optim_dim, int Mestimator, int motion_model, int depth_error_type, int sigma_estimator, int weighting, int warping, int max_keyframe_count, int finest_level, int termination, float visratio, int image_filtering, int rows, int cols) : 
   cyclical_( DISTANCE_THRESHOLD, VOLUME_SIZE, VOLUME_X), rows_(rows), cols_(cols),  global_time_(0),  integration_metric_threshold_(0.f), perform_last_scan_ (false), finished_(false), lost_ (false), optim_dim_(optim_dim), Mestimator_(Mestimator), motion_model_(motion_model), depth_error_type_(depth_error_type), sigma_estimator_(sigma_estimator), weighting_(weighting), warping_(warping), max_keyframe_count_(max_keyframe_count), finest_level_(finest_level), termination_(termination), visibility_ratio_threshold_(visratio), image_filtering_(image_filtering)
@@ -341,13 +343,9 @@ pcl::gpu::kinfuRGBD::KinfuTracker::allocateBuffers (int rows, int cols)
   intensities_prev_.resize(LEVELS);
   
   depths_keyframe_.resize (LEVELS);
-  depths_future_keyframe_.resize (LEVELS);
   depths_keyframe_filtered_.resize (LEVELS);
-  depths_keyframe_interp_.resize (LEVELS);
   intensities_keyframe_filtered_.resize (LEVELS);
   intensities_keyframe_.resize(LEVELS);
-  intensities_future_keyframe_.resize(LEVELS);
-  intensities_keyframe_interp_.resize(LEVELS);
 
   xGradsInt_keyframe_.resize(LEVELS);
   yGradsInt_keyframe_.resize(LEVELS);
@@ -358,8 +356,6 @@ pcl::gpu::kinfuRGBD::KinfuTracker::allocateBuffers (int rows, int cols)
   warped_intensities_curr_.resize(LEVELS);  
   warped_level_depths_curr_.resize(LEVELS);
   warped_level_intensities_curr_.resize(LEVELS);  
-  
-  mapping_from_curr_to_reference_.resize(LEVELS);
 
   res_intensities_.resize(LEVELS);
   res_depths_.resize(LEVELS);
@@ -386,13 +382,9 @@ pcl::gpu::kinfuRGBD::KinfuTracker::allocateBuffers (int rows, int cols)
     depths_prev_[i].create (pyr_rows, pyr_cols);  
     
     intensities_keyframe_[i].create (pyr_rows, pyr_cols);
-    intensities_future_keyframe_[i].create (pyr_rows, pyr_cols);
     depths_keyframe_[i].create (pyr_rows, pyr_cols);  
-    depths_future_keyframe_[i].create (pyr_rows, pyr_cols);  
     depths_keyframe_filtered_[i].create (pyr_rows, pyr_cols);  
     intensities_keyframe_filtered_[i].create (pyr_rows, pyr_cols);  
-    depths_keyframe_interp_[i].create (pyr_rows, pyr_cols);  
-    intensities_keyframe_interp_[i].create (pyr_rows, pyr_cols);  
 
     xGradsInt_keyframe_[i].create (pyr_rows, pyr_cols);
     yGradsInt_keyframe_[i].create (pyr_rows, pyr_cols);
@@ -403,8 +395,6 @@ pcl::gpu::kinfuRGBD::KinfuTracker::allocateBuffers (int rows, int cols)
     warped_intensities_curr_[i].create(pyr_rows, pyr_cols);
     warped_level_depths_curr_[i].create(pyr_rows, pyr_cols);
     warped_level_intensities_curr_[i].create(pyr_rows, pyr_cols);
-    
-    mapping_from_curr_to_reference_[i].create(2*pyr_rows, pyr_cols);
     
     res_intensities_[i].create(pyr_rows * pyr_cols);
     res_depths_[i].create(pyr_rows * pyr_cols);
@@ -503,24 +493,6 @@ pcl::gpu::kinfuRGBD::KinfuTracker::saveCurrentImagesAsKeyframes  ()
   for (int i = 0; i < LEVELS; ++i)
   {   
     copyImages (depths_curr_[i], intensities_curr_[i], depths_keyframe_[i], intensities_keyframe_[i]);
-  }  
-}
-
-inline void
-pcl::gpu::kinfuRGBD::KinfuTracker::savePreviousImagesAsFutureKeyframes  ()
-{
-  for (int i = 0; i < LEVELS; ++i)
-  {   
-    copyImages (depths_prev_[i], intensities_prev_[i], depths_future_keyframe_[i], intensities_future_keyframe_[i]);
-  }  
-}
-
-inline void
-pcl::gpu::kinfuRGBD::KinfuTracker::switchKeyframes  ()
-{
-  for (int i = 0; i < LEVELS; ++i)
-  {   
-    copyImages (depths_future_keyframe_[i], intensities_future_keyframe_[i], depths_keyframe_[i], intensities_keyframe_[i]);
   }  
 }
 
@@ -685,7 +657,6 @@ pcl::gpu::kinfuRGBD::KinfuTracker::estimateVisualOdometry  (const Intr cam_intri
       Matrix3f inv_current_rotation_f = inv_current_rotation.cast<float>();
       Vector3f inv_current_translation_f = inv_current_translation.cast<float>();
       Matrix3f current_rotation_f = current_rotation.cast<float>();  
-     
       
       last_iter_flag =  ((level_index == finest_level_) && (iter ==  (iter_num-1)));
       
@@ -850,456 +821,6 @@ pcl::gpu::kinfuRGBD::KinfuTracker::estimateVisualOdometry  (const Intr cam_intri
                                       bias_depth, bias_int,  //there is the option of substracting the bias just in the residuals used for computing IRLS weights.
                                       cam_intrinsics(level_index), B_SIZE,
                                       gbuf_, sumbuf_, A_total.data (), b_total.data ());
-                                      
-      pcl::StopWatch t_solve;
-      
-      MatrixXd A_optim(optim_dim_, optim_dim_);
-      A_optim = A_total.block(0,0,optim_dim_,optim_dim_);
-
-      MatrixXd b_optim(optim_dim_, 1);
-      b_optim = b_total.block(0,0,optim_dim_,1);  
-
-      MatrixXft result(optim_dim_, 1);
-      result = A_optim.llt().solve(b_optim).cast<float_trafos>(); 
-
-      //Ilumination correction variables affect the optimisation result when used, but apart from that we dont do anything with them.
-      //This part remains equal even if we used ilumination change parameters
-      Vector3ft res_trans = result.block(0,0,3,1);  
-      Vector3ft res_rot = result.block(3,0,3,1);  
-
-      //If output is B_theta^A and r_B^A
-      cam_rot_incremental_inv = expMapRot(res_rot); 
-      cam_rot_incremental = cam_rot_incremental_inv.inverse();
-      cam_trans_incremental = -cam_rot_incremental*res_trans;
-       
-      
-      //Transform updates are applied by premultiplying. Seems counter-intuitive but it is the correct way,
-      //since at each iter we warp curr frame towards prev frame.      
-      current_translation = cam_rot_incremental * current_translation + cam_trans_incremental;
-      current_rotation = cam_rot_incremental * current_rotation;
-            
-      timeBuildSystem+=t_solve.getTime();         
-    }
-    
-    if (last_iter_flag)
-    {
-      //Functions for analysis of experiments, not really need by the algorithm
-      timeError += computeError (warped_intensities_curr_[0], intensities_keyframe_[0], res_intensities_[0]); 
-      timeError += computeError (warped_depths_curr_[0], depths_keyframe_[0], res_depths_[0]);
-      
-      timeSigma +=  computeSigmaPdfWithBias(res_intensities_[0], sigma_int, bias_int, Mestimator_);
-      timeSigma +=  computeSigmaPdfWithBias(res_depths_[0], sigma_depth, bias_depth, Mestimator_);
-        
-      //timeChiSquare += computeChiSquare (res_intensities_[0], res_depths_[0], sigma_int_ref, sigma_depth_ref, Mestimator_, chi_square, chi_test, Ndof); 
-      //////////////////////
-      
-      float visibility_ratio_curr_to_KF = 1.f;
-      float visibility_ratio_KF_to_curr = 1.f;
-      
-      Matrix3f current_rotation_f = current_rotation.cast<float>();
-      Vector3f current_translation_f = current_translation.cast<float>();
-      
-      Matrix3f inv_current_rotation_f = current_rotation.inverse().cast<float>();
-      Vector3f inv_current_translation_f = -inv_current_rotation_f*current_translation.cast<float>();
-      
-      //Visibility test to initialize new KF
-      std::cout << "sigma_depth: " << sigma_depth << std::endl;      
-      float geom_tol = 3.f * sigma_depth;
-        
-      getVisibilityRatio(depths_curr_[0], depths_keyframe_[0],device_cast<Mat33> (current_rotation_f), device_cast<float3> (current_translation_f), 
-                         cam_intrinsics(0), visibility_ratio_curr_to_KF, geom_tol, depth_error_type_); 
-      std::cout << "vis ratio: " << visibility_ratio_curr_to_KF << std::endl;
-      
-      getVisibilityRatio(depths_keyframe_[0], depths_curr_[0], device_cast<Mat33> (inv_current_rotation_f), device_cast<float3> (inv_current_translation_f), 
-                         cam_intrinsics(0), visibility_ratio_KF_to_curr, geom_tol, depth_error_type_); 
-      std::cout << "vis ratio: " << visibility_ratio_KF_to_curr << std::endl;
-      
-      float visibility_ratio = std::min(visibility_ratio_curr_to_KF, visibility_ratio_KF_to_curr);    
-      visratio_ = visibility_ratio;
-      
-      if ((visibility_ratio < visibility_ratio_threshold_) && (keyframe_count_ > 0))
-      {
-        std::cout << "visibility test failed for keyframe-curr_frame dist of  " << keyframe_count_ <<  std::endl;
-        //TODO: change this again
-        //return false;
-      }
-      
-      //if (keyframe_count_ > 8)
-        //std::cout << "visibility test success till keyframe-curr_frame dist: " << keyframe_count_ <<  std::endl;
-      ////////////////////////
-       
-      //std::cout << "sigma_int: " << sigma_int << std::endl;
-      //std::cout << "sigma_depth: " << sigma_depth << std::endl;
-      //std::cout << "bias_int: " << bias_int << std::endl;
-      //std::cout << "bias_depth: " << bias_depth << std::endl;
-      //std::cout << "RMSE: " << chi_square/Ndof << std::endl;
-      
-      visibility_ratio_.push_back(visibility_ratio);
-      error_sigmas_int_.push_back(sigma_int);
-      error_sigmas_depth_.push_back(sigma_depth);
-      error_biases_int_.push_back(std::abs(bias_int));
-      error_biases_depth_.push_back(std::abs(bias_depth));
-      error_RMSE_.push_back(chi_square/Ndof);
-      
-    }          
-  } 
-    
-  std::cout << "timeTotal: " << t4.getTime() << std::endl
-              << "timeTotalSum: " << timeWarping + timeBuildSystem + timeError + timeSigma + timeChiSquare + timeGradients + timeFilters<< std::endl
-              << "  time warping: " <<  timeWarping << std::endl
-              << "  time build system: " <<  timeBuildSystem << std::endl
-              << "  time error: " <<  timeError << std::endl
-              << "  time sigma: " <<  timeSigma << std::endl
-              << "  time chiSquare: " << timeChiSquare << std::endl
-              << "  time gradients: " << timeGradients << std::endl
-              << "  time filters: " << timeFilters << std::endl;
-                            
-  resulting_rotation = current_rotation;
-  resulting_translation = current_translation;
-            
-  //Check condition number of matrix A 
-  MatrixXd A_final(6, 6);
-  A_final = A_total.block(0,0,6,6);
-  //std::cout << "A final: " << std::endl
-            //<< A_final     << std::endl;
-  
-  MatrixXd singval_A(6, 1);
-  Eigen::JacobiSVD<MatrixXd> svdA(A_final);
-  singval_A = svdA.singularValues();
-  
-  //std::cout << "singval A: " << singval_A << std::endl; 
-  
-  double max_eig = singval_A(0,0);
-  double min_eig = singval_A(0,0);
-  
-  for (unsigned int v_indx = 1; v_indx < 6; v_indx++)
-  {
-      if (singval_A(v_indx,0) >  max_eig)
-        max_eig = singval_A(v_indx,0);
-      if  (singval_A(v_indx,0) <  min_eig)
-        min_eig = singval_A(v_indx,0);
-  }
-  
-  double A_cn = max_eig / min_eig;
-  condition_numbers_.push_back(A_cn);
-  
-  std::cout << "Matrix A condition number is: " << max_eig / min_eig << std::endl;
-  std::cout << std::endl
-            << A_final.inverse().diagonal().cwiseSqrt() << std::endl;
-  ////////////////////   
-  
-  //Covariance matrix
-  Eigen::Matrix<double,6,6> pseudo_adj = Eigen::Matrix<double,6,6>::Zero();
-  //pseudo adjoint bcs xi is not a twist ( translational part is yet the translation of the SE3 trafo)
-  pseudo_adj.block<3,3>(0,0) = -resulting_rotation.cast<double>();
-  pseudo_adj.block<3,3>(3,3) = -resulting_rotation.cast<double>();
-  
-  Eigen::Matrix<double,6,6> resulting_covariance = pseudo_adj*A_final.inverse()*pseudo_adj.transpose(); 
-  
-  Eigen::Matrix<double,3,3> cov_trans = resulting_covariance.block<3,3>(0,0);
-  Eigen::Matrix<double,3,3> cov_rot = resulting_covariance.block<3,3>(3,3);
-  
-  MatrixXd singval_trans(3, 1);
-  Eigen::JacobiSVD<MatrixXd> svd_trans(cov_trans);
-  singval_trans = svd_trans.singularValues();
-  
-  double max_trans_eig = singval_trans(0,0);
-  
-  for (unsigned int v_indx = 1; v_indx < 3; v_indx++)
-  {
-      if (singval_trans(v_indx,0) >  max_trans_eig)
-        max_trans_eig = singval_trans(v_indx,0);
-  }
-  
-  MatrixXd singval_rot(3, 1);
-  Eigen::JacobiSVD<MatrixXd> svd_rot(cov_rot);
-  singval_rot = svd_rot.singularValues();
-  
-  double max_rot_eig = singval_rot(0,0);
-  
-  for (unsigned int v_indx = 1; v_indx < 3; v_indx++)
-  {
-      if (singval_rot(v_indx,0) >  max_rot_eig)
-        max_rot_eig = singval_rot(v_indx,0);
-  }
-  
-  std::cout << "max trans eig: " << sqrt(max_trans_eig) << std::endl
-            << "max rot eig: " << sqrt(max_rot_eig) << std::endl;
-  trans_maxerr_.push_back(sqrt(max_trans_eig));
-  rot_maxerr_.push_back(sqrt(max_rot_eig));  
-  odo_rmats_.push_back(resulting_rotation);
-  odo_tvecs_.push_back(resulting_translation);
-  //odo_covmats_.push_back(resulting_covariance);
-        
-  odo_odoKF_indexes_.push_back(curr_odoKF_index_);      
-  odo_curr_indexes_.push_back(global_time_);
-  
-  
-  Matrix3ft delta_rot_curr = previous_rotation.transpose()*current_rotation;
-  Vector3ft delta_trans_curr = previous_rotation.transpose()*(current_translation - previous_translation);
-    
-  Vector6ft twist = logMap(delta_rot_curr, delta_trans_curr);
-  velocity_ = twist.block(0,0,3,1) * (1.f / delta_t_);
-  omega_ = twist.block(3,0,3,1) * (1.f / delta_t_);
-  
-  chi_tests_.push_back(chi_test); //chi test is crap. Im not using it
-  vis_odo_times_.push_back(t4.getTime());
-  
-
-  // Vis Odo has converged
-//  std::cout << "chi test: " << chi_test << std::endl;
-//  
-  //if (chi_test >= 0.5) 
-    //std::cout << "chi test for 0.85 failed for keyframe " << keyframe_count_ <<  std::endl;
-  //TODO: lost detection
-  return (true);
-}
-
-
-
-inline bool 
-pcl::gpu::kinfuRGBD::KinfuTracker::estimateVisualOdometry2  (const Intr cam_intrinsics, Matrix3ft& resulting_rotation , Vector3ft& resulting_translation)
-{ 
-
-  pcl::StopWatch t4;
-
-  Matrix3ft previous_rotation = resulting_rotation;
-  Vector3ft previous_translation = resulting_translation;
-  
-  Matrix3ft current_rotation;
-  Vector3ft current_translation;
-  
-   //std::cout << "previous_rotation" << previous_rotation << std::endl
-            //<< "previous_translation" << previous_translation << std::endl;
-
-  //Initialize rotation and translation as if velocity was kept constant    
-  if ((global_time_ > 1) && (motion_model_ == CONSTANT_VELOCITY))
-  {
-    Matrix3ft delta_rot_prev;
-    Vector3ft delta_trans_prev;
-    
-    ////////////////This is not robust to changes in frame rate
-    //Matrix3ft Rm2_inv = rmats_[global_time_-2].inverse();
-    //Vector3ft   t_m2     = tvecs_[global_time_-2];
-    //Matrix3ft Rm1 = rmats_[global_time_-1];
-    //Vector3ft   t_m1 = tvecs_[global_time_-1];
-
-    //delta_rot_prev = Rm2_inv*Rm1;
-    //delta_trans_prev = Rm2_inv*(t_m1 - t_m2);
-    //delta_rot_prev = forceOrthogonalisation(delta_rot_prev);
-    
-    
-    //std::cout << "Trafo conc" << std::endl
-              //<< "delta rot_prev: " << delta_rot_prev << std::endl
-              //<< "delta trans prev: " << delta_trans_prev << std::endl;
-    ////////////////////
-    
-    ///////////////This one is robust to changes in frame rate. estimate velocity at the end of odometry estmate
-    Vector3ft v_t = velocity_*delta_t_;
-    Vector3ft omega_t = omega_*delta_t_;
-    Matrix4ft trafo_const_vel = expMap(omega_t, v_t);
-    
-    delta_rot_prev = trafo_const_vel.block(0,0,3,3);
-    delta_trans_prev = trafo_const_vel.block(0,3,3,1);    
-    ///////////////
-    
-    current_translation = previous_rotation*delta_trans_prev + previous_translation;
-    current_rotation = previous_rotation*delta_rot_prev;
-  }
-  else
-  {
-    current_translation = previous_translation;
-    current_rotation = previous_rotation;
-  }
-
-  ///////////////////////////////////////////////
-  float timeBuildSystem = 0.f;
-  float timeWarping = 0.f;
-  float timeSigma = 0.f;
-  float timeError = 0.f;
-  float timeChiSquare = 0.f;
-  float timeGradients = 0.f;
-  float timeFilters = 0.f;
-
-  Eigen::Matrix<double, B_SIZE, B_SIZE, Eigen::RowMajor> A_total;
-  Eigen::Matrix<double, B_SIZE, 1> b_total;
-
-  float sigma_int_ref, sigma_depth_ref;
-  
-  float chi_test = 1.f;
-  sigma_int_ref = 5.f;
-  sigma_depth_ref = 0.0025f;
-  float sigma_int, sigma_depth;
-  float bias_int, bias_depth;
-  
-  bool last_iter_flag = false;  
-    
-  for (int level_index = LEVELS-1; level_index>=finest_level_; --level_index)
-  {
-    int iter_num = visodo_iterations_[level_index];//+(level_index==finest_level_);
-    float chi_square_prev = 1.f;
-    float chi_square = 1.f;
-    float Ndof = (float) ( (rows_ >> level_index) * (cols_ >> level_index) );
-    float chi_test = 1.f;  
-    float RMSE;
-    float RMSE_prev;
-    
-    //KF intensity and depth/inv_depth  
-    IntensityMapf& intensity_keyframe = intensities_keyframe_[level_index];
-    DepthMapf& depth_keyframe = depths_keyframe_[level_index];     
-    
-    DepthMapf& depth_keyframe_interp = depths_keyframe_interp_[level_index];
-    IntensityMapf& intensity_keyframe_interp = intensities_keyframe_interp_[level_index];
-    
-    //We need gradients on the KF maps. 
-    GradientMap& xGradInt_keyframe_interp = xGradsInt_keyframe_[level_index];
-    GradientMap& yGradInt_keyframe_interp = yGradsInt_keyframe_[level_index];
-    GradientMap& xGradDepth_keyframe_interp = xGradsDepth_keyframe_[level_index];
-    GradientMap& yGradDepth_keyframe_interp = yGradsDepth_keyframe_[level_index];  
-    
-    DeviceArray2D<float>& mapping_from_curr_to_reference  = mapping_from_curr_to_reference_[level_index];
-
-    //Residuals between warped_{}_curr and {}_keyframe
-    DeviceArray<float>&  res_intensity = res_intensities_[level_index];
-    DeviceArray<float>&  res_depth = res_depths_[level_index];
-    
-    
-    Matrix3ft cam_rot_incremental_inv;
-    Matrix3ft cam_rot_incremental;
-    Vector3ft cam_trans_incremental;
-    
-    Matrix3ft current_rotation_prov;
-    Vector3ft current_translation_prov;
-
-    // run optim for iter_num iterations (return false when lost)
-    for (int iter = 0; iter < iter_num; ++iter)
-    { 
-      Vector3f init_vector = Vector3f::Zero();
-      float3 device_current_delta_trans = device_cast<float3>(init_vector);
-      float3 device_current_delta_rot = device_cast<float3>(init_vector);
-      Matrix3ft inv_current_rotation = current_rotation.inverse();
-      Vector3ft inv_current_translation = - current_rotation.inverse()*current_translation;      
-      
-      Matrix3f inv_current_rotation_f = inv_current_rotation.cast<float>();
-      Vector3f inv_current_translation_f = inv_current_translation.cast<float>();
-      Matrix3f current_rotation_f = current_rotation.cast<float>();  
-      Vector3f current_translation_f = current_translation.cast<float>();
-      
-      //std::cout << cam_intrinsics(level_index) << std::endl;
-      last_iter_flag =  ((level_index == finest_level_) && (iter ==  (iter_num-1)));
-      
-      
-      
-      liftWarpAndProj(depths_curr_[level_index], mapping_from_curr_to_reference,
-                      warped_depths_curr_[level_index],                         
-                         device_cast<Mat33> (current_rotation_f), 
-                         device_cast<float3> (current_translation_f), 
-                         cam_intrinsics(level_index),
-                         depth_error_type_);
-                         
-      intensities_curr_[level_index].copyTo(warped_intensities_curr_[level_index]);
-      
-      interpolateImagesAndGradients(mapping_from_curr_to_reference, depth_keyframe, intensity_keyframe, 
-                                    depth_keyframe_interp, intensity_keyframe_interp, 
-                                    xGradDepth_keyframe_interp, yGradDepth_keyframe_interp,
-                                    xGradInt_keyframe_interp, yGradInt_keyframe_interp);
-      
-      
-      
-      //if (last_iter_flag == true)
-        //break;
-
-      IntensityMapf& warped_intensity_curr = warped_intensities_curr_[level_index];
-      DepthMapf& warped_depth_curr = warped_depths_curr_[level_index];
-      
-      
-      timeError += computeError (warped_intensity_curr, intensity_keyframe_interp, res_intensity); 
-      timeError += computeError (warped_depth_curr, depth_keyframe_interp, res_depth);
-      
-      
-      if (termination_ == CHI_SQUARED)
-      {
-        timeChiSquare += computeChiSquare (res_intensity, res_depth, sigma_int_ref, sigma_depth_ref, Mestimator_, chi_square, chi_test, Ndof);
-        RMSE = sqrt(chi_square)/sqrt(Ndof);
-        //std::cout << "lvl " << level_index << " iter " << iter << ", chiSq: " << chi_square << ",Ndof: " << Ndof << ", RMSE: "<< RMSE   << std::endl;
-      
-        if (!(iter == 0))
-        {
-          
-          if (RMSE > RMSE_prev) //undo the previous increment and end iters at curr pyr
-          {
-            current_translation = cam_rot_incremental_inv*(current_translation - cam_trans_incremental);
-            current_rotation = cam_rot_incremental_inv*current_rotation;
-            std::cout << "Break in pyr " << level_index << " at iteration " << iter << std::endl; 
-            break;
-          }
-          
-          float rel_diff = abs(RMSE - RMSE_prev) / RMSE_prev;
-          
-          
-          if (rel_diff < 0.0001) //end iters at curr pyr
-          {
-            std::cout << "Break in pyr " << level_index << " at iteration " << iter << std::endl; 
-            break;
-          }
-        }     
-        
-        chi_square_prev = chi_square;
-        RMSE_prev = RMSE;       
-      }   
-
-      sigma_int = 80.f;
-      sigma_depth = 5.5f;
-      bias_int = 0.f;
-      bias_depth= 0.f;
-  
-      if (sigma_estimator_ == SIGMA_MAD)
-      {
-        timeSigma += computeSigmaMAD(res_intensity, sigma_int);
-        timeSigma += computeSigmaMAD(res_depth, sigma_depth);
-      }
-      else if (sigma_estimator_ == SIGMA_PDF)
-      {
-        timeSigma +=  computeSigmaPdf(res_intensity, sigma_int, Mestimator_);
-        timeSigma +=  computeSigmaPdf(res_depth, sigma_depth, Mestimator_);
-      }
-      else if (sigma_estimator_ == SIGMA_PDF_BIAS)
-      {
-        timeSigma +=  computeSigmaPdfWithBias(res_intensity, sigma_int, bias_int, Mestimator_);
-        timeSigma +=  computeSigmaPdfWithBias(res_depth, sigma_depth, bias_depth, Mestimator_);
-      }
-      else if (sigma_estimator_ == SIGMA_PDF_SAMPLING)
-      {
-        timeSigma +=  computeSigmaPdfWithBiasDirectReduction(res_intensity, sigma_int, bias_int, Mestimator_);
-        timeSigma +=  computeSigmaPdfWithBiasDirectReduction(res_depth, sigma_depth, bias_depth, Mestimator_);
-      }
-      else if  (sigma_estimator_ == SIGMA_CONS)
-      {
-        sigma_int = exp(log(sigma_int_ref) - 0.f*log(2)) ; //Substitute 0.f by curr lvl index??
-        sigma_depth = exp(log(sigma_depth_ref) - 0.f*log(2)) ; //if depth_error_type = DEPTH, sigma_depth is not constant (depends on Z^2). As it is -> assumed const as for depth = 1m, for every depth
-      }
-          
-      //std::cout << "Pyr level " << level_index << ", iter " << iter << std::endl; 
-      std::cout << "   sigma_int: "   << sigma_int << std::endl
-                << "   sigma_depth: " << sigma_depth << std::endl;
-                //<< "   bias_int: "    << bias_int << std::endl
-                //<< "   bias_depth: " <<  bias_depth << std::endl;
-
-      //Optimise delta
-      //bias_depth = 0.f;
-      //bias_int = 0.f;
-      
-      timeBuildSystem += buildSystem2 (device_current_delta_trans, device_current_delta_rot,
-                                        mapping_from_curr_to_reference,
-                                        depth_keyframe_interp, intensity_keyframe_interp,
-                                        xGradDepth_keyframe_interp, yGradDepth_keyframe_interp,
-                                        xGradInt_keyframe_interp, yGradInt_keyframe_interp,
-                                        warped_depth_curr, warped_intensity_curr,
-                                        Mestimator_, depth_error_type_, weighting_,
-                                        sigma_depth, sigma_int,
-                                        bias_depth, bias_int,  //there is the option of substracting the bias just in the residuals used for computing IRLS weights.
-                                        cam_intrinsics(level_index), B_SIZE,
-                                        gbuf_, sumbuf_, A_total.data (), b_total.data ());
                                       
       pcl::StopWatch t_solve;
       
@@ -1620,6 +1141,8 @@ pcl::gpu::kinfuRGBD::KinfuTracker::getImage (View& view) //const
   view.create (rows_ >> PYR_RAYCAST, cols_  >> PYR_RAYCAST );
   generateImage (vmaps_g_prev_[PYR_RAYCAST], nmaps_g_prev_[PYR_RAYCAST], light, view);
   
+  //downloadAndSaveRGB(view);
+  
   //For Visualizing filtered gradients
   //Intr intr_cam (fx_, fy_, cx_, cy_, baseline_);
   //createVMapFromInvDepthf( intr_cam(0), depths_keyframe_filtered_[0], vmaps_g_prev_[0]);
@@ -1631,6 +1154,25 @@ pcl::gpu::kinfuRGBD::KinfuTracker::getImage (View& view) //const
   //convertFloat2RGB(intensities_keyframe_filtered_[0], view);
   
   
+}
+
+void
+pcl::gpu::kinfuRGBD::KinfuTracker::downloadAndSaveRGB(const DeviceArray2D<PixelRGB>& dev_image, int pyrlevel, int iterat){
+
+	std::vector<PixelRGB> data;
+	cv::Mat cv_image;
+	int cols = dev_image.cols();
+	int rows = dev_image.rows();
+	char im_file[128];
+	data.resize(cols*rows);
+	int elem_step = 1;
+	dev_image.download(data, cols);	
+	
+  cv_image.create(rows, cols, CV_8UC3);
+	memcpy( cv_image.data, &data[0], data.size()*sizeof(PixelRGB));
+	sprintf(im_file, "sceneView/globalTime%07d.png", global_time_);
+
+ 	cv::imwrite(im_file, cv_image);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1677,7 +1219,7 @@ pcl::gpu::kinfuRGBD::KinfuTracker::operator() (const DepthMap& depth_raw, const 
     delta_t_ = delta_t;
     timestamps_.push_back(timestamp);
   }
-
+  delta_t_ = 0.033333333;
   //pcl::ScopeTime t1 ("whole loop");
 
   //std::cout << "operator() : " << endl;
@@ -1748,9 +1290,6 @@ pcl::gpu::kinfuRGBD::KinfuTracker::operator() (const DepthMap& depth_raw, const 
     
     keyframe_count_ = 0;
     curr_odoKF_index_ = 0;
-    future_odoKF_index_ = 0;
-    need_future_KFs_ = true;
-    visratio_ = 1.f;
     last_known_global_rotation = rmats_[global_time_ - 1];     // [Ri|ti] - pos of camera, i.e.
     last_known_global_translation = tvecs_[global_time_ - 1];   // transform from camera to global coo space for (i-1)th camera pose
     delta_rotation = Matrix3ft::Identity ();
@@ -1772,7 +1311,7 @@ pcl::gpu::kinfuRGBD::KinfuTracker::operator() (const DepthMap& depth_raw, const 
   //std::cout << "last trans: " << tvecs_[global_time_ - 1] << std::endl;
   //std::cout << "last rot: " << rmats_[global_time_ - 1] << std::endl;
   // Get the last-known pose
-  if (( keyframe_count_ >= max_keyframe_count_ ) || (visratio_ < visibility_ratio_threshold_) )
+  if ( keyframe_count_ >= max_keyframe_count_ )
   {
     keyframe_count_ = 0;
     curr_odoKF_index_ = global_time_ - 1;
@@ -1780,68 +1319,38 @@ pcl::gpu::kinfuRGBD::KinfuTracker::operator() (const DepthMap& depth_raw, const 
     last_known_global_translation = tvecs_[global_time_ - 1];   // transform from camera to global coo space for (i-1)th camera pose
     delta_rotation = Matrix3ft::Identity ();
     delta_translation = Vector3ft (0, 0, 0); 
-    savePreviousImagesAsKeyframes ();
   }
   
-  
-  
-  //if ((visratio_ < 0.8f) && (need_future_KFs_)) //save next keyframe
-  //{
-    //std::cout << "saveFuterKFs" << std::endl;
-    //future_odoKF_index_ = global_time_-1;
-    //savePreviousImagesAsFutureKeyframes();
-    //need_future_KFs_ = false;
-  //}
-  
-  //if (visratio_ < 0.6f) //switch keyframe
-  //{
-    //std::cout << "switch KFs" << std::endl;
-    
-    //curr_odoKF_index_ = future_odoKF_index_;
-    //switchKeyframes();
-    //last_known_global_rotation = rmats_[curr_odoKF_index_];     // [Ri|ti] - pos of camera, i.e.
-    //last_known_global_translation = tvecs_[curr_odoKF_index_];   // transform from camera to global coo space for (i-1)th camera pose
-    //delta_rotation = last_known_global_rotation.transpose()*rmats_[global_time_ - 1];
-    //delta_translation = last_known_global_rotation.transpose()*(tvecs_[global_time_ - 1]-last_known_global_translation); 
-    //need_future_KFs_ = true;
-  //}
-  
   //Daniel: visual odometry by photogametric minimisation in I and D
-  pcl::device::kinfuRGBD::sync (); 
-  
-  //I put this...
-  estimateVisualOdometry(intr, delta_rotation, delta_translation);
-  
-  //...and I commnet this 
-  //if  (!estimateVisualOdometry(intr, delta_rotation, delta_translation))
-  //{  
-    //if (!(keyframe_count_ == 0))
-    //{  
-      //keyframe_count_ = 0;
-      //curr_odoKF_index_ = global_time_ - 1;
-      //last_known_global_rotation = rmats_[global_time_ - 1];     // [Ri|ti] - pos of camera, i.e.
-      //last_known_global_translation = tvecs_[global_time_ - 1];   // transform from camera to global coo space for (i-1)th camera pose
-      //delta_rotation = Matrix3ft::Identity ();
-      //delta_translation = Vector3ft (0, 0, 0); 
+  pcl::device::kinfuRGBD::sync ();  
+  if  (!estimateVisualOdometry(intr, delta_rotation, delta_translation))
+  {  
+    if (!(keyframe_count_ == 0))
+    {  
+      keyframe_count_ = 0;
+      curr_odoKF_index_ = global_time_ - 1;
+      last_known_global_rotation = rmats_[global_time_ - 1];     // [Ri|ti] - pos of camera, i.e.
+      last_known_global_translation = tvecs_[global_time_ - 1];   // transform from camera to global coo space for (i-1)th camera pose
+      delta_rotation = Matrix3ft::Identity ();
+      delta_translation = Vector3ft (0, 0, 0); 
       
-      //savePreviousImagesAsKeyframes (); 
+      savePreviousImagesAsKeyframes (); 
       
-      ////TODO: we are lost detection: ¿chiSquare test?, ¿threshold?, ¿det(A)?
-      //if  (!estimateVisualOdometry(intr, delta_rotation, delta_translation))
-      //{
-        ////lost_ = true;
-        ////std::cout << "I am LOST!!!" << std::endl;
-        ////return(false);
-      //}        
-    //}
-    //else
-    //{
-      ////lost_ = true;
-      ////std::cout << "I am LOST!!!" << std::endl;
-      ////return(false);
-    //}      
-  //}  
-  //////////////////////////////////////////////////////////////////
+      //TODO: we are lost detection: ¿chiSquare test?, ¿threshold?, ¿det(A)?
+      if  (!estimateVisualOdometry(intr, delta_rotation, delta_translation))
+      {
+        //lost_ = true;
+        //std::cout << "I am LOST!!!" << std::endl;
+        //return(false);
+      }        
+    }
+    else
+    {
+      //lost_ = true;
+      //std::cout << "I am LOST!!!" << std::endl;
+      //return(false);
+    }      
+  }  
   
   pcl::device::kinfuRGBD::sync ();
 
@@ -1938,10 +1447,10 @@ pcl::gpu::kinfuRGBD::KinfuTracker::operator() (const DepthMap& depth_raw, const 
   saveCurrentImages();
   keyframe_count_ ++;
   
-  //if ( keyframe_count_ == max_keyframe_count_ )
-  //{
-    //saveCurrentImagesAsKeyframes (); 
-  //}
+  if ( keyframe_count_ == max_keyframe_count_ )
+  {
+    saveCurrentImagesAsKeyframes (); 
+  }
   
   ++global_time_;
 

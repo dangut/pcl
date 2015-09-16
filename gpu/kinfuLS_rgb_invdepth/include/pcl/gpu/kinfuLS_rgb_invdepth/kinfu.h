@@ -197,6 +197,9 @@ namespace pcl
 
           template<class T> void
           downloadAndSaveDepth(const DeviceArray2D<T>& dev_image, int pyrlevel, int iterat);
+          
+          void
+          downloadAndSaveRGB(const DeviceArray2D<PixelRGB>& dev_image, int pyrlevel=0, int iterat=0);
 
           void
           downloadAndSaveGradientsDepth(const DeviceArray2D<float>& dev_gradIx, const DeviceArray2D<float>& dev_gradIy, int pyrlevel, int iterat);
@@ -359,9 +362,6 @@ namespace pcl
           
           inline bool 
           estimateVisualOdometry(const pcl::device::kinfuRGBD::Intr cam_intrinsics, Matrix3ft& resulting_rotation , Vector3ft& resulting_translation);
-          
-          inline bool 
-          estimateVisualOdometry2(const pcl::device::kinfuRGBD::Intr cam_intrinsics, Matrix3ft& resulting_rotation , Vector3ft& resulting_translation);
 
           /** \brief Helper function that copies v_maps_curr and n_maps_curr to v_maps_prev_ and n_maps_prev_ */
           inline void 
@@ -377,15 +377,7 @@ namespace pcl
           
           /** \brief Helper function that copies depths_curr and intensities_curr to depths_prev_ and intensities_prev_ */
           inline void 
-          savePreviousImagesAsKeyframes();	
-          
-          inline void 
-          savePreviousImagesAsFutureKeyframes();
-          
-          inline void 
-          switchKeyframes();
- 
-	
+          savePreviousImagesAsKeyframes();					
 
           /** \brief Cyclical buffer object */
           CyclicalBuffer cyclical_;
@@ -433,15 +425,11 @@ namespace pcl
           
           /** \brief Depth pyramid. */
           std::vector<DepthMapf> depths_keyframe_;
-          std::vector<DepthMapf> depths_future_keyframe_;
           std::vector<DepthMapf> depths_keyframe_filtered_;
-          std::vector<DepthMapf> depths_keyframe_interp_;
 
           /** \brief Depth pyramid. */
           std::vector<IntensityMapf> intensities_keyframe_;
-          std::vector<IntensityMapf> intensities_future_keyframe_;
           std::vector<DepthMapf> intensities_keyframe_filtered_;
-          std::vector<DepthMapf> intensities_keyframe_interp_;
           
           /** \brief gradients pyramid. */
           std::vector<GradientMap> xGradsInt_keyframe_; 
@@ -462,7 +450,6 @@ namespace pcl
           /**Auxiliary maps for forward warping**/
           DeviceArray2D<float> projected_transformed_points_;
           DeviceArray2D<float> depth_warped_in_curr_; 
-          std::vector< DeviceArray2D<float> > mapping_from_curr_to_reference_;
 
           /** \brief Vertex maps pyramid for previous frame in global coordinate space. */
           std::vector<MapArr> vmaps_g_prev_;
@@ -524,9 +511,6 @@ namespace pcl
 
           int keyframe_count_;
           int curr_odoKF_index_;
-          int future_odoKF_index_;
-          float visratio_;
-          bool need_future_KFs_;
           
           float delta_t_;
           Vector3ft velocity_;
@@ -545,6 +529,7 @@ namespace pcl
           float visibility_ratio_threshold_;
           int image_filtering_;
           
+          
 
           // Update Pose
           Matrix3ft delta_rotation;
@@ -552,8 +537,7 @@ namespace pcl
           Matrix3ft last_known_global_rotation;
           Vector3ft   last_known_global_translation;
           
-                 
-        public:
+          public:
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
       };

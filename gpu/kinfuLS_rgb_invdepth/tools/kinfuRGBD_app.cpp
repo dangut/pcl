@@ -692,8 +692,8 @@ public:
 struct KinFuRGBDApp
 {
   enum { PCD_BIN = 1, PCD_ASCII = 2, PLY = 3, MESH_PLY = 7, MESH_VTK = 8 };
-
-  KinFuRGBDApp(pcl::Grabber& source, float vsz, float shiftDistance, int snapshotRate, int optim_vars, int Mestimator, int motion_model,  int depth_error_type, int sigma_estimator, int weighting, int warping, int keyframe_count, int finest_level, int termination, float visratio, int image_filtering,
+  
+   KinFuRGBDApp(pcl::Grabber& source, float vsz, float shiftDistance, int snapshotRate, int optim_vars, int Mestimator, int motion_model,  int depth_error_type, int sigma_estimator, int weighting, int warping, int keyframe_count, int finest_level, int termination, float visratio, int image_filtering,
                std::string poses_log = "kinfu_poses.txt", std::string misc_log = "kinfu_misc.txt") : exit_ (false), scan_ (false), scan_mesh_(false), scan_volume_ (false), independent_camera_ (false),
           registration_ (false), integrate_colors_ (false), pcd_source_ (false), focal_length_(-1.f), capture_ (source), was_lost_(false), time_ms_ (0)
   {      
